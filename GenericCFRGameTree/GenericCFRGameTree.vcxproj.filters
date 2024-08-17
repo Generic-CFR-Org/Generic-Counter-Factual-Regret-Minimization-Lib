@@ -21,12 +21,21 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="nextState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="genericCFRGameTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GenericCFRGameTree.cpp">
+    <ClCompile Include="genericCFRGameTree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nextState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
