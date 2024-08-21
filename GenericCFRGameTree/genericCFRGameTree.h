@@ -15,6 +15,7 @@
 	#endif
 #endif
 
+
 template <
 	typename Action,
 	typename CommonGameState,
@@ -71,7 +72,7 @@ public:
 		bool ( *player1_has_action ) ( GameState* ),
 		ChanceNode* starting_chance_node,
 		StrategyProfileList* all_strategies,
-		int ( *utility_from_terminal )( TerminalNode* )
+		float ( *utility_from_terminal )( TerminalNode* )
 	) {
 		commonState = common_state;
 		childNodeFunc = child_node_from_gamenode;
@@ -89,13 +90,14 @@ public:
 	long PreProcessor();
 	void ConstructTree();
 	void CFR(int, float);
-	
+	void PrintGameTree();
+	byte* gameTree;
 private:
 
 
 	/*INSTANCE MEMBERS*/
 	/*byte *gameTree;*/
-	byte* gameTree;
+	
 	CommonGameState *commonState;
 	ChanceNode *startingChanceNode;
 	StrategyProfileList *strategyProfileList;
@@ -113,7 +115,7 @@ private:
 	 */
 	bool (* player1HasAction) (GameState* curr_game_state);
 	
-	int ( *utilityFunc ) ( TerminalNode* );
+	float ( *utilityFunc ) ( TerminalNode* );
 
 
 	/**
@@ -138,16 +140,22 @@ private:
 	void TreeConstructorHelper(GameNode*, int);
 	void TreeConstructorHelper(TerminalNode*, int);
 	void TreeConstructorHelper(ChanceNode*, int);
+	
+	void setFloatAtBytePtr(unsigned char* ptr, float val);
+	float getFloatFromBytePtr(unsigned char* ptr);
 
 
-	float CFRHelper(GameNode*, float, float);
-	float CFRHelper(TerminalNode*, float, float);
-	float CFRHelper(ChanceNode*, float, float);
+	std::pair<float, long> CFRHelper(long node_pos, float, float);
+	std::pair<float, long>CFRGameNodeHelper(long gamenode_pos, float reach_prob_p1, float reach_prob_p2);
+	std::pair<float, long>CFRChanceNodeHelper(long chancenode_pos, float reach_prob_p1, float reach_prob_p2);
+	long UpdateStratProbsRecursive(long node_pos);
+	long UpdateStratGameNode(long gamenode_pos);
+	long UpdateStratChanceNode(long chancenode_pos);
 
-	float MCCFRHelper(GameNode*, float);
-	float MCCFRHelper(TerminalNode*, float);
-	float MCCFRHelper(ChanceNode*, float);
+	long printTreeHelper(long node_pos);
+	
 };
+
 
 /**
 * @brief A helper function to find the type of a child node.
@@ -311,7 +319,7 @@ inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	sizeof(byte*)	: required for storage of:
 					- starting offset for children.
 	*/
-	int node_size = probability_size + ( 2 * sizeof(uint8_t) ) + sizeof(byte*);;
+	int node_size = probability_size + ( 2 * sizeof(uint8_t) ) + sizeof(long);;
 
 	//Recursively find the size of children to add to total sum.
 	long children_total_size = 0;
@@ -346,9 +354,9 @@ inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	long cumulative_depth_offset = 0;
 	cumulativeOffsetAtDepth = new std::vector<long>(sizeAtDepth->size(), 0);
 	for (int i = 1; i < sizeAtDepth->size(); i++) {
-		long depth_size = sizeAtDepth->at(i);
+		long depth_size = sizeAtDepth->at(i - 1);
 		cumulative_depth_offset += depth_size;
-		cumulativeOffsetAtDepth->at(i - 1) = cumulative_depth_offset;
+		cumulativeOffsetAtDepth->at(i) = cumulative_depth_offset;
 	}
 	return tree_size;
 }
@@ -376,14 +384,14 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	long inital_offset = offset;
 
 	//Set classifier "g" at offset to indicate that this node is a gamenode
-	gameTree[offset++] = (byte) "g";
+	gameTree[offset++] = 'g';
 
 	//Set uint_8 for determing player who has action (1 : player 1 ; -1 : player 2)
-	if (player1HasAction) {
-		gameTree[offset++] = (uint8_t) 1;
+	if (player1HasAction(curr_gamestate)) {
+		gameTree[offset++] = (int8_t) 1;
 	}
 	else {
-		gameTree[offset++] = (uint8_t) -1;
+		gameTree[offset++] = (int8_t) -1;
 	}
 	
 	//Stores number of children / number of acitons
@@ -392,9 +400,16 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 
 	//Stores floating point values for cumulative regret, strategy probabilities, and current regret.
 	float uniform_prob = 1.0 / ((float) num_actions);
-	int total_actions_size = 3 * num_actions * sizeof(float);
-	for (long offset_temp = offset; offset_temp < offset + ( total_actions_size ); offset_temp += sizeof(float)) {
-		gameTree[offset_temp] = uniform_prob;
+	int total_actions_size = num_actions * sizeof(float);
+	for (long offset_temp = offset; offset_temp < offset + ( 2 * total_actions_size ); offset_temp += sizeof(float)) {
+		/*int ret = snprintf(gameTree + offset_temp, sizeof(float), "%f", uniform_prob);*/
+		/*gameTree[offset_temp] = uniform_prob;*/
+		setFloatAtBytePtr(gameTree + offset_temp, uniform_prob);
+	}
+	offset += 2 * total_actions_size;
+	for (long offset_temp_2 = offset; offset_temp_2 < offset + total_actions_size; offset_temp_2 += sizeof(float)) {
+		setFloatAtBytePtr(gameTree + offset_temp_2, uniform_prob);
+		/*gameTree[offset_temp_2] = 0.0f;*/
 	}
 	offset += total_actions_size;
 
@@ -440,7 +455,7 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	int inital_offset = offset;
 
 	//Set classifier to "t" to identify that the node is a Terminal Node
-	gameTree[offset] = (byte) "t";
+	gameTree[offset] = 't';
 	offset++;
 
 	//Stores utility for terminal node for player 1 (multiply by -1 for player 2)
@@ -468,7 +483,7 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	int initial_offset = offset;
 
 	//Set classifier to "c" to identify that the node is a Chance Node
-	gameTree[offset++] = (byte) "c";
+	gameTree[offset++] = 'c';
 
 	CFRGameTree::ChildrenFromChance* children_nodes = childrenFromChanceFunc(curr_node, commonState, strategyProfileList);
 	CFRGameTree::GameNodeListFromChance* children_game_nodes = std::get<CFRGameTree::GameNodeListFromChance*>(*children_nodes);
@@ -488,14 +503,17 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	*/
 	for (auto game_node_p = children_game_nodes->begin(); game_node_p != children_game_nodes->end(); game_node_p++) {
 		float child_prob = std::get<float>(**game_node_p);
-		gameTree[offset] = child_prob;
+		setFloatAtBytePtr(gameTree + offset, child_prob);
+		/*gameTree[offset] = child_prob;*/
 		offset += sizeof(float);
 		GameNode* new_game_node = std::get<GameNode*>(**game_node_p);
-		TreeConstructorHelper(new_game_node, depth + 1);
+		GameNode game_n = *(new_game_node);
+		TreeConstructorHelper(&(game_n), depth + 1);
 	}
 	for (auto terminal_node_p = children_terminal_nodes->begin(); terminal_node_p != children_terminal_nodes->end(); terminal_node_p++) {
 		float child_prob = std::get<float>(**terminal_node_p);
-		gameTree[offset] = child_prob;
+		setFloatAtBytePtr(gameTree + offset, child_prob);
+		/*gameTree[offset] = child_prob;*/
 		offset += sizeof(float);
 		TerminalNode* new_terminal_node = std::get<TerminalNode*>(**terminal_node_p);
 		TreeConstructorHelper(new_terminal_node, depth + 1);
@@ -523,58 +541,295 @@ inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, Chance
 	TreeConstructorHelper(startingChanceNode, 0);
 }
 
-
 template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
-::CFRHelper(GameNode* curr_node, float reach_prob_p1, float reach_prob_p2) {
+inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::setFloatAtBytePtr(unsigned char* ptr, float val) {
 
-
+	float* flt_ptr = reinterpret_cast<float*>(ptr);
+	*(flt_ptr) = val;
 
 }
 
 template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
-::CFRHelper(TerminalNode* curr_node, float reach_prob_p1, float reach_prob_p2) {
-	return utilityFunc(curr_node);
-}
-
-template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
-::CFRHelper(ChanceNode* curr_node, float reach_prob_p1, float reach_prob_p2) {
+inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::getFloatFromBytePtr(unsigned char* ptr) {
 	
-	return 0.0f;
+	float* flt_ptr = reinterpret_cast<float*>(ptr );
+	return *(flt_ptr);
 }
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline std::pair<float, long> CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
+::CFRHelper(long node_pos, float reach_prob_p1, float reach_prob_p2) {
+	unsigned char node_identifier = (unsigned char) gameTree[node_pos];
+	switch (node_identifier) {
+		case 'g':
+			return CFRGameNodeHelper(node_pos, reach_prob_p1, reach_prob_p2);
+		case 't':
+			//Return utility for terminal node.
+			return std::pair<float, long>(gameTree[node_pos + 1], node_pos + 1 + sizeof(float));
+		case 'c':
+			return CFRChanceNodeHelper(node_pos, reach_prob_p1, reach_prob_p2);
+		default:
+			return std::pair<float, long>(0.0, 0);
+	}
+	
+}
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline std::pair<float, long> CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
+::CFRGameNodeHelper(long gamenode_pos, float reach_prob_p1, float reach_prob_p2) {
+	
+	long pos = gamenode_pos + 1;
+	int8_t player_with_action = (int8_t) gameTree[pos++];
+	uint8_t num_children = (uint8_t) gameTree[pos++];
+
+	int arr_size = num_children * sizeof(float);
+	float* curr_strat_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+	float* cumulative_strat_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+	float* cumulative_regret = (float*) (gameTree + pos);
+	pos += arr_size;
+
+	long children_offset_start = (long) gameTree[pos];
+	pos += sizeof(long);
+
+	long next_node = pos;
+
+	float val = 0;
+	long child_pos = children_offset_start;
+	
+	
+	std::vector<float> children_utilities(num_children);
+	for (int i = 0; i < num_children; i++) {
+		float child_reach_p1 = player_with_action == 1? reach_prob_p1 * curr_strat_probs[i] : 1.0;
+		float child_reach_p2 = player_with_action == -1 ? reach_prob_p2 * curr_strat_probs[i] : 1.0;
+
+		std::pair<float, long> child_rv = CFRHelper(child_pos, child_reach_p1, child_reach_p2);
+		float child_utility = child_rv.first;
+		child_pos = child_rv.second;
+
+		val += curr_strat_probs[i] * child_utility;
+		children_utilities.at(i) = child_utility;
+	}
+
+	float cfr_reach;
+	float reach;
+	if (player_with_action == 1) {
+		cfr_reach = reach_prob_p2;
+		reach = reach_prob_p1;
+	}
+	else {
+		cfr_reach = reach_prob_p1;
+		reach = reach_prob_p2;
+	}
+	for (int j = 0; j < num_children; j++) {
+		float action_cfr_regret = ((float) player_with_action) * cfr_reach * ( children_utilities.at(j) - val );
+		cumulative_regret[j] += action_cfr_regret;
+		cumulative_strat_probs[j] += reach * curr_strat_probs[j];
+
+	}
+	
+	return std::pair<float, long>(val, next_node);
+
+}
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline std::pair<float, long> CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
+::CFRChanceNodeHelper(long chancenode_pos, float reach_prob_p1, float reach_prob_p2) {
+	long pos = chancenode_pos + 1;
+	uint8_t num_children = ( uint8_t ) gameTree[pos++];
+
+	long children_offset_start = (long) gameTree[pos];
+	pos += sizeof(long);
+
+	int arr_size = num_children * sizeof(float);
+	float *child_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+
+	long next_node = pos;
+
+	float cfr_recursive_val = 0;
+	long child_pos = children_offset_start;
+	for (int i = 0; i < num_children; i++) {
+		std::pair<float, long> rv = CFRHelper(child_pos, reach_prob_p1, reach_prob_p2);
+		cfr_recursive_val += child_probs[i] * rv.first;
+		child_pos = rv.second;
+	}
+	return std::pair<float, long>(cfr_recursive_val, next_node);
+}
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
+::UpdateStratProbsRecursive(long node_pos) {
+	unsigned char node_identifier = gameTree[node_pos];
+	switch (node_identifier) {
+		case 't':
+			//Return Terminal node's right neighbour
+			return node_pos + 1 + sizeof(float);
+
+		case 'g':
+			return UpdateStratGameNode(node_pos);
+
+		case 'c':
+			return UpdateStratChanceNode(node_pos);
+
+	}
+}
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::UpdateStratGameNode(long gamenode_pos) {
+	
+	long pos = gamenode_pos + 1;
+	int8_t player_with_action = (int8_t) gameTree[pos++];
+	uint8_t num_children = (uint8_t) gameTree[pos++];
+
+	int arr_size = num_children * sizeof(float);
+	float *curr_strat_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+	float *cumulative_strat_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+	float *cumulative_regret = (float*) (gameTree + pos);
+	pos += arr_size;
+
+	long children_offset_start = (long) gameTree[pos];
+	pos += sizeof(long);
+	long next_node = pos;
+
+	float regret_sum = 0;
+	for (int i = 0; i < num_children; i++) {
+		float action_cumulative_regret = cumulative_regret[i];
+		if (action_cumulative_regret > 0) {
+			regret_sum += action_cumulative_regret;
+		}
+	}
+	for (int j = 0; j < num_children; j++) {
+		float new_prob = regret_sum > 0 ? (std::max(cumulative_regret[j], 0.0f) / regret_sum) : (1.0f / (float) num_children);
+		curr_strat_probs[j] = new_prob;
+	}
+	
+	long child_pos = children_offset_start;
+	for (int k = 0; k < num_children; k++) {
+		child_pos = UpdateStratProbsRecursive(child_pos);
+	}
+	
+
+
+
+	return next_node;
+}
+
+template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
+inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
+::UpdateStratChanceNode(long chancenode_pos) {
+
+	long pos = chancenode_pos + 1;
+	uint8_t num_children = (uint8_t) gameTree[pos++];
+
+	long children_offset_start = (long) gameTree[pos];
+	pos += sizeof(long);
+
+	int arr_size = num_children * sizeof(float);
+	float *child_probs = (float*) (gameTree + pos);
+	pos += arr_size;
+	long next_node = pos;
+
+	long child_pos = children_offset_start;
+	for (int k = 0; k < num_children; k++) {
+		child_pos = UpdateStratProbsRecursive(child_pos);
+	}
+
+	return next_node;
+}
+
+\
+
+
 
 template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
 inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
 ::CFR(int iterations, float accuracy) {
 	
+	for (int i = 0; i < iterations; i++) {
+		CFRHelper(0, 1.0, 1.0);
+		UpdateStratProbsRecursive(0);
+	}
+	
 	return;
 }
 
-
-
-
-
-
-
 template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::MCCFRHelper(GameNode*, float) {
-	return 0.0f;
+inline void CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::PrintGameTree() {
+	printTreeHelper(0);
+
 }
 
 template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
-::MCCFRHelper(TerminalNode* curr_node, float reach_prob_p1) {
-	return regretFunc(curr_node);
+inline long CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>::printTreeHelper(long node_pos) {
+	
+	unsigned char node_identifier = gameTree[node_pos];
+	if (node_identifier == 't') {
+		return node_pos + 1 + sizeof(float);
+	}
+	else if (node_identifier == 'g') {
+		long pos = node_pos + 1;
+		int8_t player_with_action = (int8_t) gameTree[pos++];
+		uint8_t num_children = (uint8_t) gameTree[pos++];
+
+		int arr_size = num_children * sizeof(float);
+		float* curr_strat_probs = (float*) ( gameTree + pos );
+		pos += arr_size;
+		float* cumulative_strat_probs = (float*) ( gameTree + pos );
+		pos += arr_size;
+		float* cumulative_regret = (float*) ( gameTree + pos );
+		pos += arr_size;
+
+		long children_offset_start = (long) gameTree[pos];
+		pos += sizeof(long);
+		
+		std::cout << (signed int) player_with_action << "  [ ";
+		for (int i = 0; i < num_children; i++) {
+			float prob = curr_strat_probs[i];
+			std::cout << "," << prob;
+		}
+		std::cout << " ]\n";
+
+		long next_node = pos;
+
+		long child_pos = children_offset_start;
+		for (int k = 0; k < num_children; k++) {
+			child_pos = printTreeHelper(child_pos);
+		}
+		return next_node;
+	}
+	else {
+		long pos = node_pos + 1;
+		uint8_t num_children = (uint8_t) gameTree[pos++];
+
+		long children_offset_start = (long) gameTree[pos];
+		pos += sizeof(long);
+
+		int arr_size = num_children * sizeof(float);
+		float* child_probs = (float*) ( gameTree + pos );
+		pos += arr_size;
+		long next_node = pos;
+
+		long child_pos = children_offset_start;
+		for (int k = 0; k < num_children; k++) {
+			child_pos = printTreeHelper(child_pos);
+		}
+
+		return next_node;
+		return UpdateStratChanceNode(node_pos);
+	}
+	
 }
 
-template<typename Action, typename CommonGameState, typename GameState, typename TerminalNode, typename ChanceNode>
-inline float CFRGameTree<Action, CommonGameState, GameState, TerminalNode, ChanceNode>
-::MCCFRHelper(ChanceNode* curr_node, float reach_prob_p1) {
 
-	return 0.0f;
-}
+
+
+
+
+
 
 
 
