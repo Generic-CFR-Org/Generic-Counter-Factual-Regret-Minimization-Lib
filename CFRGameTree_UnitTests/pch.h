@@ -8,10 +8,8 @@
 #define PCH_H
 
 // add headers that you want to pre-compile here
-#include "framework.h"
-#include <vector>
-#include <tuple>
-#include <iostream>
-#include <algorithm>
+#include "vector"
+#include "tuple"
+#include "utility"
 
 #endif //PCH_H
