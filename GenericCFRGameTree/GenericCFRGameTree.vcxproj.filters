@@ -24,12 +24,15 @@
     <ClInclude Include="genericCFRGameTree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cfrGameTreeTypes.h">
+    <ClInclude Include="cfrGameTreeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cfrGameTreeUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
