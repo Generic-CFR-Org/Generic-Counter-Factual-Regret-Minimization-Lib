@@ -4,327 +4,283 @@
 
 
 /*
-##################################################
-### CHILDREN FROM GAME NODE CLASS DEFINITIONS  ###
-##################################################
+###############################
+### CHILD NODE DEFINITIONS  ###
+###############################
 */
 
 template<typename GameState, typename Action>
-class GameNodesFromGameNode {
-
-public:
+class GameNodeChildGameNode {
 
 	typedef std::vector<Action*> Strategy;
 	typedef std::vector<Action*> ActionsToChild;
-
-
-	std::vector<ChildGameNode<GameState, Action>*> *mChildrenGameNodes;
-
-	class ChildGameNode {
-	private:
-		GameState mChildGameState;
-		Strategy* mpChildStrategy;
-		ActionsToChild mParentActions;
-
-	public:
-		ChildGameNode(GameState gameState, Strategy* strategy, ActionsToChild parentActions) {
-			mChildGameState = gameState;
-			mpChildStrategy = strategy;
-			mParentActions = parentActions;
-		}
-		GameState GetGameState() {return mChildGameState;}
-		Strategy *GetStrategy() {return mpChildStrategy;}
-		ActionsToChild GetActionsToChild() {return mParentActions;}
-	};
-
-	typename std::vector<ChildGameNode*>::iterator  IterBegin() {
-		return mChildrenGameNodes->begin();
+private:
+	GameState mChildGameState;
+	Strategy mChildStrategy;
+	ActionsToChild mParentActions;
+public:
+	GameNodeChildGameNode(GameState gameState, Strategy strategy, ActionsToChild parentActions) {
+		mChildGameState = GameState{ gameState };
+		mChildStrategy = Strategy{ strategy };
+		mParentActions = ActionsToChild{ parentActions };
 	}
-
-	typename std::vector<ChildGameNode*>::iterator IterEnd() {
-		return mChildrenGameNodes->end();
-	}
-
-	GameNodesFromGameNode() {mChildrenGameNodes = new vector<ChildGameNode>};
-	~GameNodesFromGameNode() {
-		auto iChild = this->IterBegin();
-		auto iEnd = this->IterEnd();
-		for (iChild, iChild < iEnd, iChild++) {
-			delete iChild;
-		}
-		delete mChildrenGameNodes;
-	}
-protected:
-	void AddChildGameNode(GameState* gameState, std::vector<Action>* pStrategy, std::vector<Action> actionsToChild) {
-		ChildGameNode* childNode = new ChildGameNode(gameState, pStrategy, actionsToChild);
-		mChildrenGameNodes->push_back(childNode);
-	}
-
+	GameState GetGameState() { return mChildGameState; }
+	Strategy GetStrategy() { return mChildStrategy; }
+	ActionsToChild GetActionsToChild() { return mParentActions; }
 };
 
-template< typename ChanceNode, typename Action>
-class ChanceNodesFromGameNode {
 
-public:
+template<typename ChanceNode, typename Action>
+class GameNodeChildChanceNode {
 
 	typedef std::vector<Action*> ActionsToChild;
+private:
+	ChanceNode mChildChanceNode;
+	ActionsToChild mParentActions;
+public:
+	GameNodeChildChanceNode(ChanceNode chanceNode, ActionsToChild parentActions) {
+		mChildChanceNode = ChanceNode{ chanceNode };
+		mParentActions = ActionsToChild{ parentActions };
+	}
+	ChanceNode GetChanceNode() { return mChildChanceNode; }
+	ActionsToChild GetActionsToChild() { return mParentActions; }
+};
 
-	std::vector<ChildChanceNode<ChanceNode, Action>*>* mChildrenChanceNodes;
 
-	class ChildChanceNode {
-	private:
-		ChanceNode mChildChanceNode;
-		ActionsToChild mParentActions;
+template<typename Action>
+class GameNodeChildTerminalNode {
 
-	public:
-		ChildGameNode(ChanceNode chanceNode,  ActionsToChild parentActions) {
-			mChildChanceNode = chanceNode;
-			mParentActions = parentActions;
-		}
-		ChanceNode GetChanceNode() { return mChildChanceNode; }
-		ActionsToChild GetActionsToChild() { return mParentActions; }
-	};
+	typedef std::vector<Action*> ActionsToChild;
+private:
+	ActionsToChild mParentActions;
+public:
+	GameNodeChildTerminalNode(ActionsToChild parentActions) { mParentActions = ActionsToChild{ parentActions }; }
+	ActionsToChild GetActionsToChild() { return mParentActions; }
+};
 
-	typename std::vector<ChildChanceNode*>::iterator  IterBegin() {
-		return mChildrenChanceNodes->begin();
+
+template<typename GameState, typename Action>
+class ChanceNodeChildGameNode {
+
+	typedef std::vector<Action*> Strategy;
+private:
+	GameState mChildGameState;
+	Strategy mChildStrategy;
+	float mProbToChild;
+public:
+	ChanceNodeChildGameNode(GameState gameState, Strategy strategy, float probToChild) {
+		mChildGameState = GameState{ gameState };
+		mChildStrategy = Strategy{ strategy };
+		mProbToChild = probToChild;
+	}
+	GameState GetGameState() { return mChildGameState; }
+	Strategy GetStrategy() { return mChildStrategy; }
+	float GetProbToChild() { return mProbToChild; }
+};
+
+
+class ChanceNodeChildTerminalNode {
+private:
+	float mProbToChild;
+public:
+	ChanceNodeChildTerminalNode() { mProbToChild = 1.0; }
+	ChanceNodeChildTerminalNode(float probToChild) { mProbToChild = probToChild; }
+	float GetProbToChild() { return mProbToChild; }
+};
+
+/*
+##################################
+### CHILDREN LIST DEFINITIONS  ###
+##################################
+*/
+
+template<typename ChildNode>
+class NodeChildren {
+	
+public:
+
+	std::vector<ChildNode*>* mChildNodes;
+
+	typename std::vector<ChildNode*>::iterator  IterBegin() {
+		return mChildNodes->begin();
 	}
 
-	typename std::vector<ChildChanceNode*>::iterator IterEnd() {
-		return mChildrenChanceNodes->end();
+	typename std::vector<ChildNode*>::iterator IterEnd() {
+		return mChildNodes->end();
 	}
 
-	ChanceNodesFromGameNode() { mChildrenGameNodes = new vector<ChildGameNode> };
-	~ChanceNodesFromGameNode() {
+	NodeChildren() { mChildNodes = new std::vector<ChildNode*>; }
+	~NodeChildren() {
 		auto iChild = this->IterBegin();
 		auto iEnd = this->IterEnd();
-		for (iChild, iChild < iEnd, iChild++) {
-			delete iChild;
+		for (iChild; iChild < iEnd; iChild++) {
+			delete* iChild;
 		}
-		delete mChildrenGameNodes;
+		delete mChildNodes;
 	}
+};
 
-protected:
-	void AddChanceNode(ChanceNode* chanceNode, std::vector<Action> actionsToChild) {
-		ChildChanceNode chanceNode = new ChildChanceNode(chanceNode, actionsToChild);
-		mChildrenChanceNodes->push_back(chanceNode);
+
+template<typename GameState, typename Action>
+class GameNodeChildrenGamesNodes : public NodeChildren<GameNodeChildGameNode<GameState, Action>> {
+public:
+	typedef std::vector<Action*> ActionList;
+	typedef GameNodeChildGameNode<GameState, Action> ChildNode;
+
+	void AddChildNode(GameState gameState, ActionList strategy, ActionList actionsToChild) {
+		ChildNode* childNode = new ChildNode(gameState, strategy, actionsToChild);
+		this->mChildNodes->push_back(childNode);
 	}
+};
 
+template<typename ChanceNode, typename Action>
+class GameNodeChildrenChanceNodes : public NodeChildren<GameNodeChildChanceNode<ChanceNode, Action>> {
+public:
+	typedef std::vector<Action*> ActionList;
+	typedef GameNodeChildChanceNode<ChanceNode, Action> ChildNode;
+
+	void AddChildNode(ChanceNode chanceNode, ActionList actionsToChild) {
+		ChildNode chanceNode = new ChildNode(chanceNode, actionsToChild);
+		this->mChildNodes->push_back(chanceNode);
+	}
 };
 
 template<typename Action>
-class TerminalNodesFromGameNode {
-
+class GameNodeChildrenTerminalNodes : public NodeChildren<GameNodeChildTerminalNode<Action>> {
 public:
+	typedef std::vector<Action*> ActionList;
+	typedef GameNodeChildTerminalNode<Action> ChildNode;
 
-	typedef std::vector<Action*> ActionsToChild;
-
-	std::vector<ChildTerminalNode<Action>*>* mChildrenTerminalNodes;
-
-	class ChildTerminalNode {
-	private:
-		ActionsToChild mParentActions;
-
-	public:
-		ChildGameNode(ActionsToChild parentActions) {mParentActions = parentActions;}
-		ActionsToChild GetActionsToChild() { return mParentActions; }
-	};
-
-	typename std::vector<ChildChanceNode*>::iterator  IterBegin() {
-		return mChildrenChanceNodes->begin();
+	void AddChildNode(ActionList actionsToChild) {
+		ChildNode* terminalNode = new ChildNode(actionsToChild);
+		this->mChildNodes->push_back(terminalNode);
 	}
-
-	typename std::vector<ChildChanceNode*>::iterator IterEnd() {
-		return mChildrenChanceNodes->end();
-	}
-
-	ChanceNodesFromGameNode() { mChildrenGameNodes = new vector<ChildGameNode> };
-	~ChanceNodesFromGameNode() {
-		auto iChild = this->IterBegin();
-		auto iEnd = this->IterEnd();
-		for (iChild, iChild < iEnd, iChild++) {
-			delete iChild;
-		}
-		delete mChildrenGameNodes;
-	}
-protected:
-	void AddChildTerminalNode(std::vector<Action> actionsToChild) {
-		ChildTerminalNode *terminalNode = new ChildTerminalNode(actionsToChild);
-		mChildrenTerminalNodes->push_back(terminalNode);
-	}
-
 };
 
-template<typename GameState, typename ChanceNode, typename Action>
-class AllNodesFromGameNode {
-
+template<typename GameState, typename Action>
+class ChanceNodeChildrenGamesNodes : public NodeChildren<ChanceNodeChildGameNode<GameState, Action>> {
 public:
+	typedef std::vector<Action*> ActionList;
+	typedef ChanceNodeChildGameNode<GameState, Action> ChildNode;
 
-	GameNodesFromGameNode<GameState, Action>* mChildGameNodes;
-	ChanceNodesFromGameNode<ChanceNode, Action>* mChildChanceNodes;
-	TerminalNodesFromGameNode<Action>* mChildTerminalNodes;
-
-	AllNodesFromGameNode() {
-		mChildGameNodes = new GameNodesFromGameNode<GameState, Action>();
-		mChildChanceNodes = new ChanceNodesFromGameNode<ChanceNode, Action>();
-		mChildTerminalNodes = new TerminalNodesFromGameNode<Action>();
+	void AddChildNode(GameState gameState, ActionList strategy, float probToChild) {
+		ChildNode* childNode = new ChildNode(gameState, strategy, probToChild);
+		this->mChildNodes->push_back(childNode);
 	}
-
-	~AllNodesFromGameNode() {
-		delete mChildGameNodes;
-		delete mChildChanceNodes;
-		delete mChildTerminalNodes;
-	}
-	GameNodesFromGameNode<GameState, Action>* GetChildGameNodes() { return mChildGameNodes; }
-	ChanceNodesFromGameNode<ChanceNode, Action>* GetChildChanceNodes() { return mChildChanceNodes; }
-	TerminalNodesFromGameNode<Action>* GetChildTerminalNodes() { return mChildTerminalNodes; }
-
-	void AddChildGameNode(GameState gameState, std::vector<Action>* pStrategy, std::vector<Action> actionsToChild) {
-		mChildGameNodes->AddGameNode(gameState, pStrategy, actionsToChild);
-	}
-
-	void AddChildGameNode(ChanceNode chanceNode, std::vector<Action> actionsToChild) {
-		mChildChanceNodes->AddChanceNode(chanceNode, actionsToChild);
-	}
-
-	void AddChildTerminalNode(std::vector<Action> actionsToChild) {
-		mChildTerminalNodes->AddChildTerminalNode(actionsToChild);
-	}
-
 };
 
+class ChanceNodeChildrenTerminalNodes : public NodeChildren<ChanceNodeChildTerminalNode> {
+public:
 
+	typedef ChanceNodeChildTerminalNode ChildNode;
 
-
-
-
+	void AddChildNode(float probToChild) {
+		ChildNode* terminalNode = new ChildNode(probToChild);
+		this->mChildNodes->push_back(terminalNode);
+	}
+};
 
 /*
-####################################################
-### CHILDREN FROM CHANCE NODE CLASS DEFINITIONS  ###
-####################################################
+###############################################
+### ALL CHILDREN FROM GAME NODE DEFINITION  ###
+###############################################
+*/
+
+template<typename GameState, typename ChanceNode, typename Action>
+class ChildrenFromGameNode {
+
+public:
+	typedef std::vector<Action*> ActionList;
+
+	typedef GameNodeChildrenGamesNodes<GameState, Action> ChildGameNodes;
+	typedef GameNodeChildrenChanceNodes<ChanceNode, Action> ChildChanceNodes;
+	typedef GameNodeChildrenTerminalNodes<Action> ChildTerminalNodes;
+
+	ChildGameNodes *mpChildGameNodes;
+	ChildChanceNodes *mpChildChanceNodes;
+	ChildTerminalNodes *mpChildTerminalNodes;
+	int childCnt;
+
+	ChildrenFromGameNode() {
+		mpChildGameNodes = new ChildGameNodes();
+		mpChildChanceNodes = new ChildChanceNodes();
+		mpChildTerminalNodes = new ChildTerminalNodes();
+		childCnt = 0;
+	}
+	~ChildrenFromGameNode() {
+		delete mpChildGameNodes;
+		delete mpChildChanceNodes;
+		delete mpChildTerminalNodes;
+	}
+
+	ChildGameNodes* GetChildGameNodes() { return mpChildGameNodes; }
+	ChildChanceNodes* GetChildChanceNodes() { return mpChildChanceNodes; }
+	ChildTerminalNodes* GetChildTerminalNodes() { return mpChildTerminalNodes; }
+
+	void AddChildGameNode(GameState gameState, ActionList strategy, ActionList actionsToChild) {
+		mpChildGameNodes->AddChildNode(gameState, strategy, actionsToChild);
+		childCnt += 1;
+	}
+
+	void AddChildGameNode(ChanceNode chanceNode, ActionList actionsToChild) {
+		mpChildChanceNodes->AddChildNode(chanceNode, actionsToChild);
+		childCnt += 1;
+	}
+
+	void AddChildTerminalNode(ActionList actionsToChild) {
+		mpChildTerminalNodes->AddChildNode(actionsToChild);
+		childCnt += 1;
+	}
+
+	int size() {
+		return childCnt;
+	}
+};
+
+/*
+#################################################
+### ALL CHILDREN FROM CHANCE NODE DEFINITION  ###
+#################################################
 */
 
 template<typename GameState, typename Action>
-class GameNodesFromChanceNode {
+class ChildrenFromChanceNode {
 
 public:
+	typedef std::vector<Action*> ActionList;
 
-	typedef std::vector<Action*> Strategy;
+	typedef ChanceNodeChildrenGamesNodes<GameState, Action> ChildGameNodes;
+	typedef ChanceNodeChildrenTerminalNodes ChildTerminalNodes;
 
-	std::vector<ChildGameNode<GameState, Action>*>* mChildrenGameNodes;
+	ChildGameNodes* mpChildGameNodes;
+	ChildTerminalNodes* mpChildTerminalNodes;
+	int childCnt;
 
-	class ChildGameNode {
-	private:
-		GameState mChildGameState;
-		Strategy* mpChildStrategy;
-		float mProbToChild;
-
-	public:
-		ChildGameNode(GameState gameState, Strategy* strategy, float probToChild) {
-			mChildGameState = gameState;
-			mpChildStrategy = strategy;
-			mProbToChild = probToChild;
-			
-		GameState GetGameState() { return mChildGameState; }
-		Strategy* GetStrategy() { return mpChildStrategy; }
-		float GetProbToChild() { return mProbToChild; }
-	};
-
-	typename std::vector<ChildGameNode*>::iterator  IterBegin() {
-		return mChildrenGameNodes->begin();
+	ChildrenFromChanceNode() {
+		mpChildGameNodes = new ChildGameNodes();
+		mpChildTerminalNodes = new ChildTerminalNodes();
+		childCnt = 0;
+	}
+	~ChildrenFromChanceNode() {
+		delete mpChildGameNodes;
+		delete mpChildTerminalNodes;
 	}
 
-	typename std::vector<ChildGameNode*>::iterator IterEnd() {
-		return mChildrenGameNodes->end();
+	ChildGameNodes* GetChildGameNodes() { return mpChildGameNodes; }
+	ChildTerminalNodes* GetChildTerminalNodes() { return mpChildTerminalNodes; }
+
+	void AddChildGameNode(GameState gameState, ActionList strategy, float probToChild) {
+		mpChildGameNodes->AddChildNode(gameState, strategy, probToChild);
+		childCnt += 1;
 	}
 
-	GameNodesFromGameNode() { mChildrenGameNodes = new vector<ChildGameNode*> };
-	~GameNodesFromGameNode() {
-		auto iChild = this->IterBegin();
-		auto iEnd = this->IterEnd();
-		for (iChild, iChild < iEnd, iChild++) {
-			delete iChild;
-		}
-		delete mChildrenGameNodes;
-	}
-
-
-	void AddGameNode(GameState* gameState, std::vector<Action>* pStrategy, float probToChild) {
-		ChildGameNode* childNode = new ChildGameNode(gameState, pStrategy, probToChild);
-		mChildrenGameNodes->push_back(childNode);
-	}
-
-};
-
-
-class TerminalNodesFromChanceNode {
-
-public:
-
-	std::vector<ChildTerminalNode*>* mChildrenTerminalNodes;
-
-	class ChildTerminalNode {
-	private:
-		float mProbToChild;
-
-	public:
-		ChildGameNode(float probToChild) { mProbToChild = probToChild; }
-		float GetProbToChild() { return mProbToChild; }
-	};
-
-	typename std::vector<ChildChanceNode*>::iterator  IterBegin() {
-		return mChildrenChanceNodes->begin();
-	}
-
-	typename std::vector<ChildChanceNode*>::iterator IterEnd() {
-		return mChildrenChanceNodes->end();
-	}
-
-	ChanceNodesFromGameNode() { mChildrenGameNodes = new vector<ChildTerminalNode*> };
-	~ChanceNodesFromGameNode() {
-		auto iChild = this->IterBegin();
-		auto iEnd = this->IterEnd();
-		for (iChild, iChild < iEnd, iChild++) {
-			delete iChild;
-		}
-		delete mChildrenGameNodes;
-	}
-
-	void AddTerminalNode(float probToChild) {
-		ChildTerminalNode* terminalNode = new ChildTerminalNode(probToChild);
-		mChildrenTerminalNodes->push_back(terminalNode);
-	}
-
-};
-
-template<typename GameState, typename Action>
-class AllNodesFromChanceNode {
-
-public:
-	GameNodesFromChanceNode<GameState, Action>* mChildGameNodes;
-	TerminalNodesFromChanceNode* mChildTerminalNodes;
-
-	AllNodesFromChanceNode() {
-		mChildGameNodes = new GameNodesFromChanceNode<GameState, Action>();
-		mChildTerminalNodes = new TerminalNodesFromChanceNode();
-	}
-
-	~AllNodesFromChanceNode() {
-		delete mChildGameNodes;
-		delete mChildTerminalNodes;
-	}
-	GameNodesFromGameNode* GetChildGameNodes() { return mChildGameNodes; }
-	TerminalNodesFromGameNode* GetChildTerminalNodes() { return mChildTerminalNodes; }
-	
 	void AddChildTerminalNode(float probToChild) {
-		mChildTerminalNodes->AddChildTerminalNode(probToChild);
+		mpChildTerminalNodes->AddChildNode(probToChild);
+		childCnt += 1;
 	}
 
-	void AddChildGameNode(GameState* gameState, std::vector<Action>* pStrategy, float probToChild) {
-		mChildGameNodes->AddGameNode(gameState, pStrategy, probToChild);
+	int size() {
+		return childCnt;
 	}
 };
-
-
-
 

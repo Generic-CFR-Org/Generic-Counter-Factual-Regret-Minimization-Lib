@@ -23,42 +23,43 @@ class HistoryNode {
 
 public:
 
-	typedef std::pair<GameState, Action*> GameHistoryNode;
+	typedef std::pair<GameState, Action*> GameNodeHistoryNode;
 
 	HistoryNode() {
-		mIsGameState, mIsChanceNode, mIsAction = false;
-		mGameState();
-		mChanceNode();
+		mIsGameNode, mIsChanceNode = false;
+		mGameState = GameState{};
+		mChanceNode = ChanceNode{};
 		mpActionTaken = nullptr;
 	}
 
 	HistoryNode(GameState gameState, Action* actionTaken) {
 		mIsChanceNode = false;
 		mIsGameNode = true;
-		mChanceNode();
-		mGameState = gameState;
+		mChanceNode = ChanceNode{};
+		mGameState = GameState{gameState};
 		mpActionTaken = actionTaken;
 	}
 
 	HistoryNode(ChanceNode chanceNode) {
 		mIsGameNode = false;
 		mIsChanceNode = true;
-		mGameState();
+		mGameState = GameState{};
 		mpActionTaken = nullptr;
-		mChanceNode = chanceNode;
+		mChanceNode = ChanceNode{ chanceNode };
 	}
+
 
 
 	bool IsGameNode() { return mIsGameNode; }
 	bool IsChanecNode() { return mIsChanceNode; }
 
-	GameHistoryNode GetGameNode() {
+	GameNodeHistoryNode GetGameNode() {
 		if (!mIsGameNode) {
 			historyHasNoGameNode e = historyHasNoGameNode();
 			std::cout << e.what();
 			throw e;
 		}
-		return gameHistoryNode(mGamestate, mpActionTaken); 
+		return GameNodeHistoryNode(mGameState, mpActionTaken);
 	}
 	ChanceNode GetChanceNode() { 
 		if (!mIsChanceNode) {
@@ -75,32 +76,47 @@ template<typename GameState, typename ChanceNode, typename Action>
 class History {
 
 public:
-	std::vector<*HistoryNode<GameState, ChanceNode, Action>> *mHistoryList;
-	History() {historyList = new std::vector<historyNode<GameState, ChanceNode, Action>>}
+	std::vector<HistoryNode<GameState, ChanceNode, Action>> *mHistoryList;
+	History() { mHistoryList = new std::vector<HistoryNode<GameState, ChanceNode, Action>>; }
+	History(std::vector<HistoryNode<GameState, ChanceNode, Action>> oldHistory) {
+		mHistoryList = new std::vector<HistoryNode<GameState, ChanceNode, Action>>(oldHistory);
+	}
 	~History() {
-		auto iHistory = IterBegin();
+		/*auto iHistory = IterBegin();
 		auto iEnd = IterEnd();
 		for (iHistory; iHistory != iEnd; iHistory++) {
-			delete iHistory;
+			delete *iHistory;
+		}*/
+		try {
+			delete mHistoryList;
+
 		}
-		delete mHistoryList;
+		catch (...) {
+			std::cout << "couldn't delete history"; 
+		}
 	}
-	typename std::vector<*HistoryNode<GameState, ChanceNode, Action>>::iterator  IterBegin() {
+	typename std::vector<HistoryNode<GameState, ChanceNode, Action>>::iterator  IterBegin() {
 		return mHistoryList->begin();
 	}
 
-	typename std::vector<*HistoryNode<GameState, ChanceNode, Action>>::iterator  IterEnd() {
+	typename std::vector<HistoryNode<GameState, ChanceNode, Action>>::iterator  IterEnd() {
 		return mHistoryList->end();
 	}
 
-	History* AddToHistory(GameState gameState, Action* actionTaken) {
-		HistoryNode *historyNode = new HistoryNode(gameState, actionTaken);
-		mHistoryList->push_back(historyNode);
+	History* AddToNewHistory(GameState gameState, Action* actionTaken) {
+		History<GameState, ChanceNode, Action> *pNewHistory = new History<GameState, ChanceNode, Action>(*mHistoryList);
+		HistoryNode<GameState, ChanceNode, Action> historyNode = HistoryNode<GameState, ChanceNode, Action>(gameState, actionTaken);
+		pNewHistory->mHistoryList->push_back(historyNode);
+		return pNewHistory;
 	}
 
-	History* AddToHistory(ChanceNode chanceNode) {
-		HistoryNode* historyNode = new HistoryNode(chanceNode);
-		mHistoryList->push_back(historyNode);
+	History* AddToNewHistory(ChanceNode chanceNode) {
+		History<GameState, ChanceNode, Action>* pNewHistory = new History<GameState, ChanceNode, Action>(*mHistoryList);
+		HistoryNode<GameState, ChanceNode, Action> historyNode = HistoryNode<GameState, ChanceNode, Action>(chanceNode);
+		pNewHistory->mHistoryList->push_back(historyNode);
+		return pNewHistory;
 	}
+
+
 
 };

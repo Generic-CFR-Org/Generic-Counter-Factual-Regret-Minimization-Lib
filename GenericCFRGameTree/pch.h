@@ -9,9 +9,10 @@
 
 // add headers that you want to pre-compile here
 #include "framework.h"
-#include <vector>
+#include "vector"
 #include <tuple>
 #include <iostream>
 #include <algorithm>
+#include <stdexcept>
 
 #endif //PCH_H

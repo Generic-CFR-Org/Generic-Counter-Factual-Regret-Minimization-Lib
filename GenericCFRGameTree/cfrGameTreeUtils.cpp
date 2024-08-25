@@ -30,8 +30,9 @@ TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
 	
 	mIdentifier = (unsigned char) pGameTree[pGameNodePos++];
 	mPlayerToAct = (int8_t) pGameTree[pGameNodePos++];
-	mNumChildrenOrActions = (uint8_t) pGameTree[pGameNodePos++];
-	long arrSize = mNumChildrenOrActions * sizeof(float);
+	mNumActions = (uint8_t) pGameTree[pGameNodePos++];
+	mNumChildren = (uint8_t) pGameTree[pGameNodePos++];
+	long arrSize = mNumActions * sizeof(float);
 	mpCurrStratArr = (float*) ( pGameTree + pGameNodePos );
 	pGameNodePos += arrSize;
 	mpCumStratArr = (float*) ( pGameTree + pGameNodePos );
@@ -80,6 +81,7 @@ void TreeGameNode::AddCumRegret(float regret, int index) {
 	*( ( this->mpCumRegretArr ) + index ) += regret;
 }
 
+
 std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode) {
 	os << "Tree Game Node:\n";
 	const char* playerOneToAct = "Player One";
@@ -90,28 +92,29 @@ std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode) {
 	else {
 		os << " - " << playerTwoToAct << "'s Turn\n";
 	}
-	os << " - " << "Number of Actions / Children: " << (int) treeGameNode.mNumChildrenOrActions << "\n";
+	os << " - " << "Number of Actions: " << (int) treeGameNode.mNumActions << "\n";
+	os << " - " << "Number of Children: " << (int) treeGameNode.mNumChildren << "\n";
 	os << " - " << "Offset for start of Children Nodes: " << (long) treeGameNode.mpChildStartOffset << "\n";
 	os << " - " << "Current Strategy:  [";
-	int numChildren = treeGameNode.mNumChildrenOrActions;
-	for (int iAction = 0; iAction < numChildren - 1; iAction++) {
+	int numActions = treeGameNode.mNumActions;
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
 		os << " " << treeGameNode.GetCurrStratProb(iAction) << " ,";
 	}
-	os << " " << treeGameNode.GetCurrStratProb(numChildren - 1) << " ]\n";
+	os << " " << treeGameNode.GetCurrStratProb(numActions - 1) << " ]\n";
 
 	os << " - " << "Cumulative Strategy Probabilities:  [";
 	
-	for (int iAction = 0; iAction < numChildren - 1; iAction++) {
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
 		os << " " << treeGameNode.GetCumStratProb(iAction) << " ,";
 	}
-	os << " " << treeGameNode.GetCumStratProb(numChildren - 1) << " ]\n";
+	os << " " << treeGameNode.GetCumStratProb(numActions - 1) << " ]\n";
 
 	os << " - " << "Cumulative Regrets:  [";
 	
-	for (int iAction = 0; iAction < numChildren - 1; iAction++) {
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
 		os << " " << treeGameNode.GetCumRegret(iAction) << " ,";
 	}
-	os << " " << treeGameNode.GetCumRegret(numChildren - 1) << " ]\n\n";
+	os << " " << treeGameNode.GetCumRegret(numActions - 1) << " ]\n\n";
 	return os;
 }
 

@@ -16,7 +16,8 @@ class TreeGameNode {
 public:
 	unsigned char mIdentifier;
 	int8_t mPlayerToAct;
-	uint8_t mNumChildrenOrActions;
+	uint8_t mNumActions;
+	uint8_t mNumChildren;
 	float* mpCurrStratArr;
 	float* mpCumStratArr;
 	float* mpCumRegretArr;

@@ -141,7 +141,9 @@
   <ItemGroup>
     <ClInclude Include="cfrGameTreeUtils.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="gameHistory.h" />
     <ClInclude Include="genericCFRGameTree.h" />
+    <ClInclude Include="ChildNodeUtils.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
