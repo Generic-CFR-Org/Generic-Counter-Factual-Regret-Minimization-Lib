@@ -229,10 +229,9 @@ public:
 
 	void AddChildTerminalNode(ActionList actionsToChild) {
 		mpChildTerminalNodes->AddChildNode(actionsToChild);
-		childCnt += 1;
 	}
 
-	int size() {
+	int nonTerminalSize() {
 		return childCnt;
 	}
 };
@@ -276,10 +275,9 @@ public:
 
 	void AddChildTerminalNode(float probToChild) {
 		mpChildTerminalNodes->AddChildNode(probToChild);
-		childCnt += 1;
 	}
 
-	int size() {
+	int nonTerminalSize() {
 		return childCnt;
 	}
 };

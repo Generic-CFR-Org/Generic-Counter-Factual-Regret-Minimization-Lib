@@ -17,11 +17,16 @@ public:
 	unsigned char mIdentifier;
 	int8_t mPlayerToAct;
 	uint8_t mNumActions;
-	uint8_t mNumChildren;
+	uint8_t mNumNonTerminalChildren;
+	bool mHasTerminalChildren;
+	long mpChildStartOffset;
 	float* mpCurrStratArr;
 	float* mpCumStratArr;
 	float* mpCumRegretArr;
-	long mpChildStartOffset;
+	uint8_t* mpNumActionPerChild;
+	uint8_t* mpActionIndexPerChild;
+	uint8_t* mpNumChildPerAction;
+	uint8_t* mpChildPosPerAction;
 	long mpNextNodePos;
 
 	/**
@@ -53,6 +58,10 @@ public:
 	 * @return (float) value of cumulative regret
 	 */
 	float GetCumRegret(int index);
+
+	std::vector<uint8_t> GetChildIndicesForAction(int actionIndex);
+
+	std::vector<uint8_t> GetActionIndicesForChild(int childIndex);
 
 	/**
 	 * @brief Updates (float) probability of Game Node Action indexed by 'index'
@@ -89,7 +98,8 @@ class TreeTerminalNode {
 class TreeChanceNode {
 public:
 	unsigned char mIdentifier;
-	uint8_t mNumChildren;
+	uint8_t mNumNonTerminalChildren;
+	bool mHasTerminalChildren;
 	long mpChildStartOffset;
 	float* mpProbToChildArr;
 	long mpNextNodePos;
