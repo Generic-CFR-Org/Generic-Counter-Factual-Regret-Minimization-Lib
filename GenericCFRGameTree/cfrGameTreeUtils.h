@@ -1,5 +1,7 @@
 #pragma once
 
+//Forward Declaration
+struct TreeNodeChildren;
 
 /*
 ###########################################
@@ -18,15 +20,13 @@ public:
 	int8_t mPlayerToAct;
 	uint8_t mNumActions;
 	uint8_t mNumNonTerminalChildren;
-	bool mHasTerminalChildren;
+	uint8_t mNumTerminalChildren;
 	long mpChildStartOffset;
 	float* mpCurrStratArr;
 	float* mpCumStratArr;
 	float* mpCumRegretArr;
 	uint8_t* mpNumActionPerChild;
 	uint8_t* mpActionIndexPerChild;
-	uint8_t* mpNumChildPerAction;
-	uint8_t* mpChildPosPerAction;
 	long mpNextNodePos;
 	byte* mGameTreePtr;
 
@@ -60,8 +60,6 @@ public:
 	 */
 	float GetCumRegret(int index);
 
-	std::vector<uint8_t> GetChildIndicesForAction(int actionIndex);
-
 	std::vector<uint8_t> GetActionIndicesForChild(int childIndex);
 
 	/**
@@ -94,9 +92,14 @@ std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode);
 
 /*Representation of Terminal Node in constructed Game Tree*/
 class TreeTerminalNode {
-	unsigned char _identifier;
-	float utilityVal;
-	long _pNextNodePos;
+public:
+	unsigned char mIdentifier;
+	float mUtilityVal;
+	long mpNextNodePos;
+
+	TreeTerminalNode(byte* pGameTree, long pTerminalNodePos);
+
+	static int NodeSize();
 
 };
 
@@ -105,7 +108,7 @@ class TreeChanceNode {
 public:
 	unsigned char mIdentifier;
 	uint8_t mNumNonTerminalChildren;
-	bool mHasTerminalChildren;
+	uint8_t mNumTerminalChildren;
 	long mpChildStartOffset;
 	float* mpProbToChildArr;
 	long mpNextNodePos;
@@ -128,7 +131,7 @@ public:
 	float GetChildReachProb(int index);
 
 	/**
-	 * @brief Get all Game node and Chance node children
+	 * @brief Get all Game node  children
 	 * @return Struct containing all non terminal children.
 	 */
 	TreeNodeChildren GetChildren();
@@ -153,6 +156,7 @@ void SetFloatAtBytePtr(unsigned char* pByte, float val);
 */
 float GetFloatFromBytePtr(unsigned char* pByte);
 
+
 /*
 ##########################################
 ###     CHILD GETTER HELPER FUNCTION   ###
@@ -164,14 +168,10 @@ struct TreeNodeChildren {
 	std::vector<TreeGameNode> treeGameNodes;
 	std::vector<TreeChanceNode> treeChanceNodes;
 
-
 	std::vector<TreeGameNode> GetChildrenGameNodes();
 	std::vector<TreeChanceNode> GetChildrenChanceNodes();
-
 	void AddChildNode(TreeGameNode);
 	void AddChildNode(TreeChanceNode);
-
-
 };
 
 static TreeNodeChildren GetAllChildren(byte* pGameTree, int numChildren, long childStartOffset);

@@ -318,13 +318,14 @@ public:
 
 	static AllHistoryArray* GetAllHistoriesToNode(TreeNode* terminalNode) {
 		std::vector<TreeNode*> *pRootToNode = new std::vector<TreeNode*>();
+		TreeNode* currNode = terminalNode;
 		int numPaths = 1;
-		while (terminalNode != nullptr) {
-			pRootToNode->insert(pRootToNode->begin(), terminalNode);
-			if (terminalNode->IsParentGameNode()) {
-				numPaths *= terminalNode->GetParentActions().size(); 
+		while (currNode != nullptr) {
+			pRootToNode->insert(pRootToNode->begin(), currNode);
+			if (currNode->IsParentGameNode()) {
+				numPaths *= currNode->GetParentActions().size();
 			}
-			terminalNode = terminalNode->GetParent();
+			currNode = currNode->GetParent();
 		}
 		AllHistoryArray* pAllHistories = new AllHistoryArray(numPaths);
 		HistoryArrayHelper(pAllHistories, pRootToNode, numPaths, 0, 0);
