@@ -28,6 +28,7 @@ public:
 	uint8_t* mpNumChildPerAction;
 	uint8_t* mpChildPosPerAction;
 	long mpNextNodePos;
+	byte* mGameTreePtr;
 
 	/**
 	 * @brief Constructs TreeGameNode from pointer to the game Tree and the node's offset.
@@ -82,6 +83,11 @@ public:
 	 */
 	void AddCumRegret(float regret, int index);
 
+	/**
+	 * @brief Get all Game node and Chance node children
+	 * @return Struct containing all non terminal children.
+	 */
+	TreeNodeChildren GetChildren();
 };
 
 std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode);
@@ -103,6 +109,7 @@ public:
 	long mpChildStartOffset;
 	float* mpProbToChildArr;
 	long mpNextNodePos;
+	byte* mGameTreePtr;
 
 	/**
 	 * @brief Constructs TreeChanceNode from pointer to the game Tree and the node's offset.
@@ -119,6 +126,12 @@ public:
 	 * @return (float) value of probability of reaching Child Node.
 	 */
 	float GetChildReachProb(int index);
+
+	/**
+	 * @brief Get all Game node and Chance node children
+	 * @return Struct containing all non terminal children.
+	 */
+	TreeNodeChildren GetChildren();
 };
 
 /*
@@ -139,6 +152,32 @@ void SetFloatAtBytePtr(unsigned char* pByte, float val);
 * @return
 */
 float GetFloatFromBytePtr(unsigned char* pByte);
+
+/*
+##########################################
+###     CHILD GETTER HELPER FUNCTION   ###
+##########################################
+*/
+
+struct TreeNodeChildren {
+
+	std::vector<TreeGameNode> treeGameNodes;
+	std::vector<TreeChanceNode> treeChanceNodes;
+
+
+	std::vector<TreeGameNode> GetChildrenGameNodes();
+	std::vector<TreeChanceNode> GetChildrenChanceNodes();
+
+	void AddChildNode(TreeGameNode);
+	void AddChildNode(TreeChanceNode);
+
+
+};
+
+static TreeNodeChildren GetAllChildren(byte* pGameTree, int numChildren, long childStartOffset);
+
+
+
 
 
 

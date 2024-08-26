@@ -27,8 +27,7 @@ float GetFloatFromBytePtr(unsigned char* pByte) {
 ###########################################
 */
 TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
-	//TODO: Remove debugging variable.
-	long start = pGameNodePos;
+
 	mIdentifier = (unsigned char) pGameTree[pGameNodePos++];
 	mPlayerToAct = (int8_t) pGameTree[pGameNodePos++];
 	mNumActions = (uint8_t) pGameTree[pGameNodePos++];
@@ -78,15 +77,12 @@ TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
 	mpChildPosPerAction = (uint8_t*) ( pGameTree + pGameNodePos );
 	pGameNodePos += numChildElems * sizeof(uint8_t);
 
-
-	//TODO: Remove debugging variable.
-	long size = pGameNodePos - start;
 	mpNextNodePos = pGameNodePos;
+	mGameTreePtr = pGameTree;
 }
 
 TreeChanceNode::TreeChanceNode(byte* pGameTree, long pChanceNodePos) {
-	//TODO: Remove debugging variable.
-	long start = pChanceNodePos;
+
 	mIdentifier = (unsigned char) pGameTree[pChanceNodePos++];
 	mNumNonTerminalChildren = (uint8_t) pGameTree[pChanceNodePos++];
 	mHasTerminalChildren = (bool) pGameTree[pChanceNodePos++];
@@ -95,9 +91,9 @@ TreeChanceNode::TreeChanceNode(byte* pGameTree, long pChanceNodePos) {
 	long arrSize = mNumNonTerminalChildren * sizeof(float);
 	mpProbToChildArr = (float*) (pGameTree + pChanceNodePos);
 	pChanceNodePos += arrSize;
-	//TODO: Remove debugging variable.
-	long size = pChanceNodePos - start;
+
 	mpNextNodePos = pChanceNodePos;
+	mGameTreePtr = pGameTree;
 	
 }
 
@@ -146,8 +142,6 @@ std::vector<uint8_t> TreeGameNode::GetActionIndicesForChild(int childIndex) {
 	return actionIndicesArr;
 }
 
-
-
 void TreeGameNode::SetCurrStratProb(float prob, int index) {
 	*( (this->mpCurrStratArr) + index ) = prob;
 }
@@ -158,6 +152,67 @@ void TreeGameNode::AddCumStratProb(float prob, int index) {
 
 void TreeGameNode::AddCumRegret(float regret, int index) {
 	*( ( this->mpCumRegretArr ) + index ) += regret;
+}
+
+TreeNodeChildren TreeGameNode::GetChildren() {
+	byte* pGameTree = mGameTreePtr;
+	long childStartOffset = mpChildStartOffset;
+	int numChildren = mNumNonTerminalChildren;
+	return GetAllChildren(mGameTreePtr, numChildren, childStartOffset);
+}
+
+
+float TreeChanceNode::GetChildReachProb(int index) {
+	return this->mpProbToChildArr[index];
+}
+
+TreeNodeChildren TreeChanceNode::GetChildren() {
+	byte* pGameTree = mGameTreePtr;
+	long childStartOffset = mpChildStartOffset;
+	int numChildren = mNumNonTerminalChildren;
+	return GetAllChildren(mGameTreePtr, numChildren, childStartOffset);
+}
+
+
+
+std::vector<TreeGameNode> TreeNodeChildren::GetChildrenGameNodes() {
+	return treeGameNodes;
+}
+
+std::vector<TreeChanceNode> TreeNodeChildren::GetChildrenChanceNodes() {
+	return treeChanceNodes;
+}
+
+void TreeNodeChildren::AddChildNode(TreeGameNode node) {
+	this->treeGameNodes.push_back(node);
+}
+
+void TreeNodeChildren::AddChildNode(TreeChanceNode node) {
+	this->treeChanceNodes.push_back(node);
+}
+
+static TreeNodeChildren GetAllChildren(byte* pGameTree, int numChildren, long childStartOffset) {
+
+	TreeNodeChildren allChildren = TreeNodeChildren();
+	char identifier;
+	long childOffset = childStartOffset;
+	for (int iChild = 0; iChild < numChildren; iChild++) {
+		identifier = pGameTree[childOffset];
+		if (identifier == 'g') {
+			TreeGameNode childTreeNode = TreeGameNode(pGameTree, childOffset);
+			childOffset = childTreeNode.mpNextNodePos;
+			allChildren.AddChildNode(childTreeNode);
+		}
+		else if (identifier == 'c') {
+			TreeChanceNode childTreeNode = TreeChanceNode(pGameTree, childOffset);
+			childOffset = childTreeNode.mpNextNodePos;
+			allChildren.AddChildNode(childTreeNode);
+		}
+		else {
+			//TODO: Create error to throw.
+		}
+	}
+	return allChildren;
 }
 
 
@@ -223,9 +278,7 @@ std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode) {
 }
 
 
-float TreeChanceNode::GetChildReachProb(int index) {
-	return this->mpProbToChildArr[index];
-}
+
 
 
 
