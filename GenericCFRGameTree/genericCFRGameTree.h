@@ -1005,8 +1005,9 @@ float CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	int iTerminalEnd = terminalNodeStart + (numTerminalChildren *  terminalNodeSize);
 	int iTerminal = terminalNodeStart;
 	for (iTerminal; iTerminal < iTerminalEnd; iTerminal += terminalNodeSize) {
-		TreeTerminalNode terminalNode = TreeTerminalNode(mGameTree, iTerminal);
-		float childUtil = terminalNode.mUtilityVal;
+
+		byte* pUtility = (byte*) (mGameTree + iTerminal);
+		float childUtil = GetFloatFromBytePtr(pUtility);
 
 		float childReachProb = chanceGameNode->GetChildReachProb(childIndex);
 		val += childReachProb * childUtil;
