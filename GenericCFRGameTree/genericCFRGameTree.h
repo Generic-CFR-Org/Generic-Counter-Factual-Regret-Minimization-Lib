@@ -21,7 +21,7 @@
 	#endif
 #endif
 
-template<typename GameState, typename ChanceNode, typename Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
 class CFRGameTree {
 
 public:
@@ -42,6 +42,7 @@ public:
 
 	CFRGameTree() {
 
+		mpGameInfo = nullptr;
 		mChildrenFromGameFunc = nullptr;
 		mChildrenFromChanceFunc = nullptr;
 		mStartingChanceNode = ChanceNode();
@@ -55,12 +56,14 @@ public:
 	}
 
 	CFRGameTree(
-		GameNodeChildren* ( *childNodesFromGameNode )( GameState, Strategy ),
-		ChanceNodeChildren* ( *childNodesFromChanceNode ) ( ChanceNode ),
-		bool ( *playerOneHasAction ) ( GameState ),
+		GameInfo* gameInfo,
+		GameNodeChildren* ( *childNodesFromGameNode )( GameState, Strategy, GameInfo* ),
+		ChanceNodeChildren* ( *childNodesFromChanceNode ) ( ChanceNode, GameInfo* ),
+		bool ( *playerOneHasAction ) ( GameState, GameInfo* ),
 		ChanceNode startingChanceNode,
-		float ( *utilityFromHistory )( History )
+		float ( *utilityFromHistory )( History, GameInfo* )
 	) {
+		mpGameInfo = gameInfo;
 		mChildrenFromGameFunc = childNodesFromGameNode;
 		mChildrenFromChanceFunc = childNodesFromChanceNode;
 		mPlayerOneHasAction = playerOneHasAction;
@@ -86,6 +89,9 @@ private:
 	/*Pointer to constructed Game tree*/
 	byte* mGameTree;
 
+	/*Pointer to User defined Game Info used to generate the tree*/
+	GameInfo* mpGameInfo;
+
 	/*Pointer to root of Game Tree (Chance Node)*/
 	ChanceNode mStartingChanceNode;
 	
@@ -99,28 +105,28 @@ private:
 	 * @brief User defined function returns list of Child Nodes from
 			  a given GameNode, Common Game State, and Strategy Profile List.
 	 */
-	GameNodeChildren* (*mChildrenFromGameFunc)( GameState gameState, Strategy strategy);
+	GameNodeChildren* (*mChildrenFromGameFunc)( GameState gameState, Strategy strategy, GameInfo* gameInfo);
 
 	/**
 	 * @brief User defined function returns 2-tuple of list pointers.
 	 *		  1st elem is a list of Child Game Nodes with probability from the Chance Node.
 	 *		  2nd elem is a list of Child Terminal Nodes with probability from the Chance Node.
 	 */
-	ChanceNodeChildren* (*mChildrenFromChanceFunc) ( ChanceNode );
+	ChanceNodeChildren* (*mChildrenFromChanceFunc) ( ChanceNode, GameInfo* gameInfo );
 
 	/**
 	 * @brief User defined function that gets player who has action for a given gamestate
 	 * @param pCurrGameState 
 	 * @return true if player 1 has action, false if player 2 has action.
 	 */
-	bool (* mPlayerOneHasAction) (GameState currGameState);
+	bool (* mPlayerOneHasAction) (GameState currGameState, GameInfo* gameInfo);
 	
 	/**
 	 * @brief User defined function that gets utility value from given Terminal Node.
 	 * @param pCurrTerminalNode
 	 * @return (float) value of utility of pCurrTerminalNode.
 	 */
-	float ( *mUtilityFunc ) ( History history );
+	float ( *mUtilityFunc ) ( History history, GameInfo* gameInfo);
 
 	/**
 	 * @brief Overloaded Helper functions for pre - processing the game tree.
@@ -168,8 +174,8 @@ private:
 * @param pCurrNode
 * @return The size of the required information from a GameNode and all of its descendants in bytes.
 */
-template< typename GameState, typename ChanceNode, typename Action >
-inline long CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::PreProcessorHelper(GameState gameState, Strategy strategy, int depth, int uniqueHistoriesCnt) {
 	
 	//Ensure sizeAtDepth is large enough to store value at current depth
@@ -192,17 +198,18 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
 	int numActions = strategy.size();
 	int strategySize = 3 * sizeof(float) * numActions;
 
-	GameNodeChildren* pGameNodeChildren = mChildrenFromGameFunc(gameState, strategy);
-	int numNonTerminalChildren = pGameNodeChildren->nonTerminalSize();
+	GameNodeChildren* pGameNodeChildren = mChildrenFromGameFunc(gameState, strategy, mpGameInfo);
+	int numGameChildren = pGameNodeChildren->GameSize();
+	int numChanceChildren = pGameNodeChildren->ChanceSize();
 	int numTerminalChildren = pGameNodeChildren->TerminalSize();
-	int numTotalChildren = numNonTerminalChildren + numTerminalChildren;
+	int numTotalChildren = numGameChildren + numChanceChildren + numTerminalChildren;
 	/*
 	sizeof(uint8_t) * 5:	
-					- node identifier "c" for cfr updates (1)
 					- boolean that is true when player 1 has action / false otherwise.
 					- number of actions for cfr updates (1)
-					- number of non terminal children for tree traversal (1)
-					- number of terminal children for tree travesal (1).
+					- number of game node children for tree traversal (1)
+					- number of chance node children for tree traversal (1)
+					- number of terminal node children for tree travesal (1).
 	
 	sizeof(byte*)	: 
 					- starting offset for children.
@@ -314,13 +321,13 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
 * @param pCurrNode
 * @return The size of the required information from a Terminal Node, which has no descendants.
 */
-template< typename GameState, typename ChanceNode, typename Action >
-inline long CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::PreProcessorHelperTerminal(int depth, int uniqueHistoriesCnt){
 	
 	std::cout << "Unique Terminal count: " << uniqueHistoriesCnt << "\n";
 
-	long terminalNodeSize = sizeof(float) + sizeof(byte);
+	long terminalNodeSize = sizeof(float);
 	long totalTerminalNodesSize = terminalNodeSize * uniqueHistoriesCnt;
 	//Update SizeAtDepth for future tree construction.
 	if (mSizeAtDepth->size() <= depth) {
@@ -338,8 +345,8 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
 * @param pCurrNode
 * @return The size of current Chance Node and all of its descendants in bytes.
 */
-template< typename GameState, typename ChanceNode, typename Action >
-inline long CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::PreProcessorHelper(ChanceNode chanceNode, int depth, int uniqueHistoriesCnt) {
 	
 	//Ensure mSizeAtDepth is large enough to store value at current depth
@@ -347,24 +354,23 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
 		mSizeAtDepth->push_back(0);
 	}
 
-	ChanceNodeChildren * pChanceNodeChildren = mChildrenFromChanceFunc(chanceNode);
+	ChanceNodeChildren * pChanceNodeChildren = mChildrenFromChanceFunc(chanceNode, mpGameInfo);
 
 	/*
 	Total size for float vector of probability of reaching each child node.
 	*/
-	long probabilityCnt = pChanceNodeChildren->nonTerminalSize();
+	long probabilityCnt = pChanceNodeChildren->GameSize() + pChanceNodeChildren->TerminalSize();
 	long probabilitySize = probabilityCnt * (long) sizeof(float);
 
 	/*
-	sizeof(uint8_t) * 3:	required for storage of :
-					- node identifier "c" for deserialization (1)
-					- number of children for tree traversal (1)
-					- boolean to identify if node has any terminal children.
+	sizeof(uint8_t) * 2:	required for storage of :
+					- number of game children for tree traversal (1)
+					- number of terminal children for tree traversal (1).
 	 
 	sizeof(byte*)	: required for storage of:
 					- starting offset for children.
 	*/
-	int nodeSize = probabilitySize + ( 3 * sizeof(uint8_t) ) + sizeof(long);;
+	int nodeSize = probabilitySize + ( 2 * sizeof(uint8_t) ) + sizeof(long);;
 
 
 
@@ -425,8 +431,8 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
 * @brief Preprocess GameTree before construction
 * @return Size of entire game tree in bytes
 */
-template< typename GameState, typename ChanceNode, typename Action >
-inline long CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::PreProcessor() {
 	//Initialize sizeAtDepth vector for future tree construction.
 	mSizeAtDepth = new std::vector<long>();
@@ -457,28 +463,24 @@ inline long CFRGameTree<GameState, ChanceNode, Action>
  * @param depth 
  */
 
-template<typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::TreeConstructorHelper(GameState gameState, Strategy strategy, int depth, GameHistoryTreeNode* pHistoryTreeNode) {
 	
-	GameNodeChildren* pGameNodeChildren = mChildrenFromGameFunc(gameState, strategy);
+	GameNodeChildren* pGameNodeChildren = mChildrenFromGameFunc(gameState, strategy, mpGameInfo);
 
 	//Obtain offset using cumulativeOffsetAtDepth as part of Depth First Search tree construction.
 	long offset = mCumulativeOffsetAtDepth->at(depth);
 	long initialOffset = offset;
 
-
 	int numActions = strategy.size();
-	int numNonTerminalChildren = pGameNodeChildren->nonTerminalSize();
+	int numGameChildren = pGameNodeChildren->GameSize();
+	int numChanceChildren = pGameNodeChildren->ChanceSize();
 	int numTerminalChildren = pGameNodeChildren->TerminalSize();
-	int totalNumChildren = numNonTerminalChildren + numTerminalChildren;
-	//Sets node in Game Tree if setNode is true. Used to avoid duplicate nodes.
+	int totalNumChildren = numGameChildren + numChanceChildren + numTerminalChildren;
 	
-	//Set classifier "g" at offset to indicate that this node is a gamenode
-	mGameTree[offset++] = 'g';
-
 	//Set uint_8 for determing player who has action (1 : player 1 ; -1 : player 2)
-	if (mPlayerOneHasAction(gameState)) {
+	if (mPlayerOneHasAction(gameState, mpGameInfo)) {
 		mGameTree[offset++] = (int8_t) 1;
 	}
 	else {
@@ -488,10 +490,13 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 	//Stores number of actions
 	mGameTree[offset++] = (uint8_t) numActions;
 
-	//Stores number of children
-	mGameTree[offset++] = (uint8_t) numNonTerminalChildren;
+	//Stores number of Game Node children
+	mGameTree[offset++] = (uint8_t) numGameChildren;
 
-	/*Stores number of terminal children*/
+	//Stores number of Chance Node children
+	mGameTree[offset++] = (uint8_t) numChanceChildren;
+
+	/*Stores number of Terminal Node children*/
 	mGameTree[offset++] = (uint8_t) numTerminalChildren;
 
 	//Stores starting offset of children.
@@ -671,8 +676,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
  * @param pCurrNode
  * @param depth
  */
-template<typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::TreeConstructorHelperTerminal(int depth, GameHistoryTreeNode* pHistoryTreeNode) {
 	
 	long offset = mCumulativeOffsetAtDepth->at(depth);
@@ -686,12 +691,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 		
 		History historyArr = pHistories->GetPath(iHistory);
 
-		//Set classifier to "t" to identify that the node is a Terminal Node
-		mGameTree[offset] = 't';
-		offset++;
-
 		//Find utility value at terminal node using history.
-		float utilityVal = mUtilityFunc(historyArr);
+		float utilityVal = mUtilityFunc(historyArr, mpGameInfo);
 
 		//Stores utility for terminal node for player 1
 		SetFloatAtBytePtr(mGameTree + offset, utilityVal);
@@ -715,21 +716,18 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
  * @param pCurrNode
  * @param depth
  */
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template< typename GameState, typename ChanceNode, typename Action, typename GameInfo >
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::TreeConstructorHelper(ChanceNode chanceNode, int depth, GameHistoryTreeNode* pHistoryTreeNode) {
 	
 	long offset = mCumulativeOffsetAtDepth->at(depth);
 	int initialOffset = offset;
 
-	//Set classifier to "c" to identify that the node is a Chance Node
-	mGameTree[offset++] = 'c';
-
-	ChanceNodeChildren* pChildrenNodes = mChildrenFromChanceFunc(chanceNode);
+	ChanceNodeChildren* pChildrenNodes = mChildrenFromChanceFunc(chanceNode, mpGameInfo);
 
 	//Stores number of non terminal children                                                                                                                                                                                                            
-	int numNonTerminalChildren = pChildrenNodes->nonTerminalSize();
-	mGameTree[offset++] = (uint8_t) numNonTerminalChildren;
+	int numGameChildren = pChildrenNodes->GameSize();
+	mGameTree[offset++] = (uint8_t) numGameChildren;
 
 	/*Stores number of terminal children*/
 	int numTerminalChildren = pChildrenNodes->TerminalSize();
@@ -814,8 +812,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
  *		  the traversal of the tree.
 		  This creates a tree structure that is organized by the depth of nodes.
  */
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::ConstructTree() {
 	int treeSize = PreProcessor();
 	mGameTree = new byte[treeSize];
@@ -833,8 +831,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
  * @return Pair where first element = utility of gamenode, second element = position of next node in tree.
  */
 
-template< typename GameState, typename ChanceNode, typename Action >
-float CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+float CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::CFRHelper(TreeGameNode* treeGameNode, float reachProbPlayerOne, float reachProbPlayerTwo, int terminalIndex) {
 
 	//Variable for determing which player has action at the current node.
@@ -982,8 +980,8 @@ float CFRGameTree<GameState, ChanceNode, Action>
 	return val;
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-float CFRGameTree<GameState, ChanceNode, Action>
+template< typename GameState, typename ChanceNode, typename Action, typename GameInfo >
+float CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::CFRHelper(TreeChanceNode* chanceGameNode, float reachProbPlayerOne, float reachProbPlayerTwo, int terminalIndex) {
 
 	int val = 0;
@@ -1017,11 +1015,10 @@ float CFRGameTree<GameState, ChanceNode, Action>
 	return val;
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::UpdateStratProbs(TreeGameNode *treeGameNode) {
 	
-	int numChildren = treeGameNode->mNumNonTerminalChildren;
 	int numActions = treeGameNode->mNumActions;
 	float regretSum = 0;
 	for (int iAction = 0; iAction < numActions; iAction++) {
@@ -1047,8 +1044,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 	}
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template< typename GameState, typename ChanceNode, typename Action, typename GameInfo >
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::UpdateStratProbs(TreeChanceNode *treeChanceNode) {
 	TreeNodeChildren children = treeChanceNode->GetChildren();
 	//Recursively call on all game node children.
@@ -1060,8 +1057,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 
 
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::CFR(int iterations, float accuracy) {
 	
 	TreeChanceNode rootNode = TreeChanceNode(mGameTree, 0);
@@ -1079,11 +1076,10 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 	return;
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::UpdateNashStrategy(TreeGameNode* treeGameNode, int numIterations) {
 	
-	int numNonTerminalChildren = treeGameNode->mNumNonTerminalChildren;
 	int numActions = treeGameNode->mNumActions;
 	float unnormalizedTotal = 0;
 	for (int iAction = 0; iAction < numActions; iAction++) {
@@ -1112,8 +1108,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 	
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::UpdateNashStrategy(TreeChanceNode* treeChanceNode, int numIterations) {
 	TreeNodeChildren children = treeChanceNode->GetChildren();
 	//Recursively call on all game node children.
@@ -1124,15 +1120,15 @@ inline void CFRGameTree<GameState, ChanceNode, Action>
 }
 
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>::PrintGameTree() {
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>::PrintGameTree() {
 	TreeChanceNode root = TreeChanceNode(mGameTree, 0);
 	PrintTreeHelper(&root);
 
 }
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>::PrintTreeHelper(TreeGameNode* treeGameNode) {
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>::PrintTreeHelper(TreeGameNode* treeGameNode) {
 
 	std::cout << *treeGameNode;
 	//Recursively call on all non terminal children.
@@ -1148,8 +1144,8 @@ inline void CFRGameTree<GameState, ChanceNode, Action>::PrintTreeHelper(TreeGame
 }
 
 
-template< typename GameState, typename ChanceNode, typename Action >
-inline void CFRGameTree<GameState, ChanceNode, Action>::PrintTreeHelper(TreeChanceNode* treeChanceNode) {
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>::PrintTreeHelper(TreeChanceNode* treeChanceNode) {
 	TreeNodeChildren children = treeChanceNode->GetChildren();
 	//Recursively call on all game node children.
 	std::vector<TreeGameNode> gameNodeChildren = children.GetChildrenGameNodes();

@@ -28,10 +28,10 @@ float GetFloatFromBytePtr(unsigned char* pByte) {
 */
 TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
 
-	mIdentifier = (unsigned char) pGameTree[pGameNodePos++];
 	mPlayerToAct = (int8_t) pGameTree[pGameNodePos++];
 	mNumActions = (uint8_t) pGameTree[pGameNodePos++];
-	mNumNonTerminalChildren = (uint8_t) pGameTree[pGameNodePos++];
+	mNumGameChildren = (uint8_t) pGameTree[pGameNodePos++];
+	mNumChanceChildren = (uint8_t) pGameTree[pGameNodePos++];
 	mNumTerminalChildren = (uint8_t) pGameTree[pGameNodePos++];
 	mpChildStartOffset = (long) pGameTree[pGameNodePos];
 	pGameNodePos += sizeof(long);
@@ -48,7 +48,7 @@ TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
 
 	long tempPos = pGameNodePos;
 	
-	int totalNumChildren = mNumNonTerminalChildren + mNumTerminalChildren;
+	int totalNumChildren = mNumGameChildren + mNumChanceChildren + mNumTerminalChildren;
 	long numChildArrSize = totalNumChildren * sizeof(uint8_t);
 	mpNumActionPerChild = (uint8_t*) ( pGameTree + pGameNodePos );
 		
@@ -68,12 +68,11 @@ TreeGameNode::TreeGameNode(byte* pGameTree, long pGameNodePos) {
 
 TreeChanceNode::TreeChanceNode(byte* pGameTree, long pChanceNodePos) {
 
-	mIdentifier = (unsigned char) pGameTree[pChanceNodePos++];
-	mNumNonTerminalChildren = (uint8_t) pGameTree[pChanceNodePos++];
+	mNumGameChildren = (uint8_t) pGameTree[pChanceNodePos++];
 	mNumTerminalChildren = (uint8_t) pGameTree[pChanceNodePos++];
 	mpChildStartOffset = (long) pGameTree[pChanceNodePos];
 	pChanceNodePos += sizeof(long);
-	long arrSize = mNumNonTerminalChildren * sizeof(float);
+	long arrSize = (mNumGameChildren + mNumTerminalChildren) * sizeof(float);
 	mpProbToChildArr = (float*) (pGameTree + pChanceNodePos);
 	pChanceNodePos += arrSize;
 
@@ -82,7 +81,6 @@ TreeChanceNode::TreeChanceNode(byte* pGameTree, long pChanceNodePos) {
 }
 
 TreeTerminalNode::TreeTerminalNode(byte* pGameTree, long pTerminalNodePos) {
-	mIdentifier = (unsigned char) pGameTree[pTerminalNodePos++];
 	byte* pUtility = (byte*) (pGameTree + pTerminalNodePos);
 	mUtilityVal = GetFloatFromBytePtr(pUtility);
 	pTerminalNodePos += sizeof(float);
@@ -90,7 +88,7 @@ TreeTerminalNode::TreeTerminalNode(byte* pGameTree, long pTerminalNodePos) {
 }
 
 int TreeTerminalNode::NodeSize() {
-	return sizeof(mIdentifier) + sizeof(mUtilityVal);
+	return sizeof(mUtilityVal);
 }
 
 float TreeGameNode::GetCurrStratProb(int index) {
@@ -136,8 +134,9 @@ void TreeGameNode::AddCumRegret(float regret, int index) {
 TreeNodeChildren TreeGameNode::GetChildren() {
 	byte* pGameTree = mGameTreePtr;
 	long childStartOffset = mpChildStartOffset;
-	int numChildren = mNumNonTerminalChildren;
-	return GetAllChildren(pGameTree, numChildren, childStartOffset);
+	int numGameChildren = mNumGameChildren;
+	int numChanceChildren = mNumGameChildren;
+	return GetAllChildren(pGameTree, numGameChildren, mNumChanceChildren, childStartOffset);
 }
 
 
@@ -148,8 +147,8 @@ float TreeChanceNode::GetChildReachProb(int index) {
 TreeNodeChildren TreeChanceNode::GetChildren() {
 	byte* pGameTree = mGameTreePtr;
 	long childStartOffset = mpChildStartOffset;
-	int numChildren = mNumNonTerminalChildren;
-	return GetAllChildren(pGameTree, numChildren, childStartOffset);
+	int numChildren = mNumGameChildren;
+	return GetAllChildren(pGameTree, numChildren, 0, childStartOffset);
 }
 
 
@@ -170,26 +169,21 @@ void TreeNodeChildren::AddChildNode(TreeChanceNode node) {
 	this->treeChanceNodes.push_back(node);
 }
 
-static TreeNodeChildren GetAllChildren(byte* pGameTree, int numChildren, long childStartOffset) {
+static TreeNodeChildren GetAllChildren(byte* pGameTree, int numGameChildren, int numChanceChildren, long childStartOffset) {
 
 	TreeNodeChildren allChildren = TreeNodeChildren();
 	char identifier;
 	long childOffset = childStartOffset;
-	for (int iChild = 0; iChild < numChildren; iChild++) {
-		identifier = pGameTree[childOffset];
-		if (identifier == 'g') {
-			TreeGameNode childTreeNode = TreeGameNode(pGameTree, childOffset);
-			childOffset = childTreeNode.mpNextNodePos;
-			allChildren.AddChildNode(childTreeNode);
-		}
-		else if (identifier == 'c') {
-			TreeChanceNode childTreeNode = TreeChanceNode(pGameTree, childOffset);
-			childOffset = childTreeNode.mpNextNodePos;
-			allChildren.AddChildNode(childTreeNode);
-		}
-		else {
-			//TODO: Create error to throw.
-		}
+	for (int iGameChild = 0; iGameChild < numGameChildren; iGameChild++) {
+		
+		TreeGameNode childTreeNode = TreeGameNode(pGameTree, childOffset);
+		childOffset = childTreeNode.mpNextNodePos;
+		allChildren.AddChildNode(childTreeNode);
+	}
+	for (int iChanceChild = 0; iChanceChild < numGameChildren; iChanceChild++) {
+		TreeChanceNode childTreeNode = TreeChanceNode(pGameTree, childOffset);
+		childOffset = childTreeNode.mpNextNodePos;
+		allChildren.AddChildNode(childTreeNode);
 	}
 	return allChildren;
 }
@@ -206,12 +200,14 @@ std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode) {
 		os << " - " << playerTwoToAct << "'s Turn\n";
 	}
 	int numActions = (int) treeGameNode.mNumActions;
-	int numNonTerminalChildren = (int) treeGameNode.mNumNonTerminalChildren;
+	int numGameChildren = (int) treeGameNode.mNumGameChildren;
+	int numChanceChildren = (int) treeGameNode.mNumChanceChildren;
 	int numTerminalChildren = (int) treeGameNode.mNumTerminalChildren;
-	int numTotalChildren = numNonTerminalChildren + numTerminalChildren;
+	int numTotalChildren = numGameChildren + numChanceChildren + numTerminalChildren;
 	os << " - " << "Number of Actions: " << numActions << "\n";
-	os << " - " << "Number of Non Terminal Children: " << numNonTerminalChildren << "\n";
-	os << " - " << "Number of terminal children: " << numTerminalChildren << "\n";
+	os << " - " << "Number of Game Node Children: " << numGameChildren << "\n";
+	os << " - " << "Number of Chance Node Children: " << numGameChildren << "\n";
+	os << " - " << "Number of Terminal Node children: " << numTerminalChildren << "\n";
 	os << " - " << "Offset for start of Children Nodes: " << (long) treeGameNode.mpChildStartOffset << "\n";
 	os << " - " << "Current Strategy:  [";
 	for (int iAction = 0; iAction < numActions - 1; iAction++) {

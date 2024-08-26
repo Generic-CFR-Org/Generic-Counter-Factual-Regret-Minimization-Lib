@@ -199,14 +199,16 @@ public:
 	ChildGameNodes *mpChildGameNodes;
 	ChildChanceNodes *mpChildChanceNodes;
 	ChildTerminalNodes *mpChildTerminalNodes;
-	int childCnt;
+	int gameChildCnt;
+	int chanceChildCnt;
 	int terminalChildCnt;
 
 	ChildrenFromGameNode() {
 		mpChildGameNodes = new ChildGameNodes();
 		mpChildChanceNodes = new ChildChanceNodes();
 		mpChildTerminalNodes = new ChildTerminalNodes();
-		childCnt = 0;
+		gameChildCnt = 0;
+		chanceChildCnt = 0;
 		terminalChildCnt = 0;
 	}
 	~ChildrenFromGameNode() {
@@ -221,12 +223,12 @@ public:
 
 	void AddChildGameNode(GameState gameState, ActionList strategy, ActionList actionsToChild) {
 		mpChildGameNodes->AddChildNode(gameState, strategy, actionsToChild);
-		childCnt += 1;
+		gameChildCnt += 1;
 	}
 
-	void AddChildGameNode(ChanceNode chanceNode, ActionList actionsToChild) {
+	void AddChildChanceNode(ChanceNode chanceNode, ActionList actionsToChild) {
 		mpChildChanceNodes->AddChildNode(chanceNode, actionsToChild);
-		childCnt += 1;
+		chanceChildCnt += 1;
 	}
 
 	void AddChildTerminalNode(ActionList actionsToChild) {
@@ -234,8 +236,11 @@ public:
 		terminalChildCnt += 1;
 	}
 
-	int nonTerminalSize() {
-		return childCnt;
+	int GameSize() {
+		return gameChildCnt;
+	}
+	int ChanceSize() {
+		return chanceChildCnt;
 	}
 	int TerminalSize() {
 		return terminalChildCnt;
@@ -286,7 +291,7 @@ public:
 		terminalChildCnt += 1;
 	}
 
-	int nonTerminalSize() {
+	int GameSize() {
 		return childCnt;
 	}
 

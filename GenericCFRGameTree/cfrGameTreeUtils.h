@@ -16,10 +16,10 @@ typedef unsigned char byte;
 class TreeGameNode {
 	
 public:
-	unsigned char mIdentifier;
 	int8_t mPlayerToAct;
 	uint8_t mNumActions;
-	uint8_t mNumNonTerminalChildren;
+	uint8_t mNumGameChildren;
+	uint8_t mNumChanceChildren;
 	uint8_t mNumTerminalChildren;
 	long mpChildStartOffset;
 	float* mpCurrStratArr;
@@ -93,21 +93,18 @@ std::ostream& operator<<(std::ostream& os, TreeGameNode& treeGameNode);
 /*Representation of Terminal Node in constructed Game Tree*/
 class TreeTerminalNode {
 public:
-	unsigned char mIdentifier;
 	float mUtilityVal;
 	long mpNextNodePos;
 
 	TreeTerminalNode(byte* pGameTree, long pTerminalNodePos);
 
 	static int NodeSize();
-
 };
 
 /*Representation of Chance Node in constructed Game Tree*/
 class TreeChanceNode {
 public:
-	unsigned char mIdentifier;
-	uint8_t mNumNonTerminalChildren;
+	uint8_t mNumGameChildren;
 	uint8_t mNumTerminalChildren;
 	long mpChildStartOffset;
 	float* mpProbToChildArr;
@@ -174,7 +171,7 @@ struct TreeNodeChildren {
 	void AddChildNode(TreeChanceNode);
 };
 
-static TreeNodeChildren GetAllChildren(byte* pGameTree, int numChildren, long childStartOffset);
+static TreeNodeChildren GetAllChildren(byte*, int, int, long);
 
 
 

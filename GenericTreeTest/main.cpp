@@ -4,13 +4,21 @@
 
 int main(int argc, char* argv[]) {
 
+	using GameState = RockPaperScissors::GameState;
+	using ChanceNode = RockPaperScissors::ChanceNode;
+	using Action = RockPaperScissors::Action;
+	using Game = RockPaperScissors;
+
+	using CFRTree = CFRGameTree<GameState, ChanceNode, Action, Game>;
+
 	RockPaperScissors* game = new RockPaperScissors();
-	game->CreateGameTree();
+
+	CFRTree* tree = new CFRTree(game, &Game::childrenFromGame, &Game::childrenFromChance, &Game::player1Action, game->chanceNode, &Game::TerminalRegret);
 	
-	game->tree->ConstructTree();
+	tree->ConstructTree();
 	
-	game->tree->CFR(300, 0);
+	tree->CFR(300, 0);
 
 	std::cout << "After CFR: \n\n";
-	game->tree->PrintGameTree();
+	tree->PrintGameTree();
 }
