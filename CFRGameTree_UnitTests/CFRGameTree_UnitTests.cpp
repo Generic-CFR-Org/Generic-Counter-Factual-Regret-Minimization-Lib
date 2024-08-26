@@ -64,7 +64,7 @@ public:
 	typedef std::vector<TerminalNodeWithProb*> TerminalNodeListFromChance;
 
 	typedef std::tuple<GameNode*, TerminalNode*, ChanceNode*> ChildNode;
-	typedef std::tuple<GameNodeListFromChance*, TerminalNodeListFromChance*> ChildrenFromChance;
+	typedef std::tuple<GameNodeListFromChance*, TerminalNodeListFromChance*> ChanceNodeChildren;
 
 
 	/*static constexpr CommonGameState* no_common = nullptr;
@@ -120,14 +120,14 @@ public:
 		return child_node;
 	}
 
-	static ChildrenFromChance* childrenFromChance(ChanceNode* chance_node, CommonGameState* common, StrategyProfileList* all_strategies) {
+	static ChanceNodeChildren* childrenFromChance(ChanceNode* chance_node, CommonGameState* common, StrategyProfileList* all_strategies) {
 		GameState* start_state = new GameState(true);
 		StrategyProfile* new_strat = all_strategies->at(0);
 		float prob = 1.0;
 		GameNodeWithProb* startNode = new GameNodeWithProb{ start_state, new_strat, prob };
 		GameNodeListFromChance* startNodeList = new GameNodeListFromChance{ startNode };
 		TerminalNodeListFromChance* emptyTerminalList = new TerminalNodeListFromChance{};
-		ChildrenFromChance* children_FromChance = new ChildrenFromChance{ startNodeList, emptyTerminalList };
+		ChanceNodeChildren* children_FromChance = new ChildrenFromChance{ startNodeList, emptyTerminalList };
 		return children_FromChance;
 	}
 
