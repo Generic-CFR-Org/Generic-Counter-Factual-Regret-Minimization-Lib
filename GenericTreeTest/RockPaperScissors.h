@@ -96,7 +96,7 @@ public:
 		}
 
 		if (player1 == 'r' && player2 == 's') {
-			return 1.0;
+			return 3.0;
 		}
 		if (player1 == 'r' && player2 == 'p') {
 			return -1.0;

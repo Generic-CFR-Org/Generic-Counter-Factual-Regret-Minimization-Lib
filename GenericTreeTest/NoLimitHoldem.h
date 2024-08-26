@@ -17,47 +17,32 @@ class NLHPoker {
 
 class Bet {
 
-	float mBetPct; 
+	float mBetPct;
+	float mBetBB;
 	bool mIsCheck;
 	bool mIsFold;
 	
-
-
 };
 
-class CommonPokerState {
-
-	//Size = 3 cards * 2 bytes (rank & suit) + 1 byte for null terminator
-	const char mFlop[7];
-	float mStartingPot;
-	float mEffectiveStack;
-
-};
-
-class GameState {
+class PokerState {
 
 	int mPlayerWithAction;
 	//Size = 2 cards * 2 bytes (rank & suit) + 1 byte for null terminator
 	Street mCurrentStreet;
 	const char mHoleCards[5];
 	float mPot;
+
+	//Common state for both players.
+	const char mBoard[11];
+	float mEffectiveStack;
 };
 
-class ChanceNode {
+class PokerChance {
 
 	Street mPreviousStreet;
 
-};
-
-class TerminalNode {
-
-	bool mPlayerOneFolded;
-	bool mPlayerTwoFolded;
-	float mPot;
-	//Size = 5 cards * 2 bytes (rank & suit) + 1 byte for null terminator
+	//Common State for both players.
 	const char mBoard[11];
-	//Size = 2 cards * 2 bytes (rank & suit) + 1 byte for null terminator
-	const char mPlayerOneCards[5];
-	const char mPlayerTwoCards[5];
-
+	float mPot;
 };
+

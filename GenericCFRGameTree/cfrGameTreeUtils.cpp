@@ -83,7 +83,8 @@ TreeChanceNode::TreeChanceNode(byte* pGameTree, long pChanceNodePos) {
 
 TreeTerminalNode::TreeTerminalNode(byte* pGameTree, long pTerminalNodePos) {
 	mIdentifier = (unsigned char) pGameTree[pTerminalNodePos++];
-	mUtilityVal = (float) pGameTree[pTerminalNodePos];
+	byte* pUtility = (byte*) (pGameTree + pTerminalNodePos);
+	mUtilityVal = GetFloatFromBytePtr(pUtility);
 	pTerminalNodePos += sizeof(float);
 	mpNextNodePos = pTerminalNodePos;
 }

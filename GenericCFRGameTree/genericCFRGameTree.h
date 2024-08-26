@@ -935,7 +935,7 @@ float CFRGameTree<GameState, ChanceNode, Action>
 
 	for (int iTerminal = 0; iTerminal < numUserTerminalNodes; iTerminal++) {
 		std::vector<uint8_t> actionIndices = treeGameNode->GetActionIndicesForChild(childIndex);
-		int childTerminalIndexStart = actionIndices.size();
+		int childTerminalIndexStart = terminalIndex * actionIndices.size();
 			
 		int actionIndex = 0;
 		for (int iAction : actionIndices) {
@@ -962,7 +962,7 @@ float CFRGameTree<GameState, ChanceNode, Action>
 	}	
 	float cfrReach;
 	float reach;
-	if (treeGameNode->mPlayerToAct == 1) {
+	if (playerTurn == 1) {
 		cfrReach = reachProbPlayerTwo;
 		reach = reachProbPlayerOne;
 	}
@@ -972,10 +972,11 @@ float CFRGameTree<GameState, ChanceNode, Action>
 		reach = reachProbPlayerTwo;
 	}
 	for (int iAction = 0; iAction < treeGameNode->mNumActions; iAction++) {
-		float regretMultiplier = (float) treeGameNode->mPlayerToAct;
+		float regretMultiplier = (float) playerTurn;
 		float actionUtility = actionUtilities.at(iAction);
 		float currStratProb = treeGameNode->GetCurrStratProb(iAction);
 		float actionCfrRegret = regretMultiplier * cfrReach * ( actionUtility - val );
+		treeGameNode->AddCumRegret(actionCfrRegret, iAction);
 		treeGameNode->AddCumStratProb(reach * currStratProb, iAction);
 	}
 	return val;
