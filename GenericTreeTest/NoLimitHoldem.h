@@ -19,7 +19,9 @@ class Bet {
 
 	float mBetPct;
 	float mBetBB;
-	bool mIsCheck;
+	bool isPct;
+	bool isBB;
+	bool mIsCheckorCall;
 	bool mIsFold;
 	
 };

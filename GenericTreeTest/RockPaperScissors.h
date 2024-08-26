@@ -6,9 +6,6 @@
 #include <genericCFRGameTree.h>
 
 
-
-
-
 class RockPaperScissors {
 public:
 
