@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 	tree->ConstructTree();
 	std::cout << "Before CFR: \n\n";
 
-	tree->CFR(5000);
+	tree->CFRAccuracy(0.0025);
 
 	std::cout << "After CFR: \n\n";
 	tree->PrintGameTree();

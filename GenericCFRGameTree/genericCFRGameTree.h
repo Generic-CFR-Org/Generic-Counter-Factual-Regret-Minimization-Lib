@@ -1085,12 +1085,23 @@ template<typename GameState, typename ChanceNode, typename Action, typename Game
 inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::CFRAccuracy(float accuracy) {
 
-	/*for (int iCFR = 0; iCFR < iterations; iCFR++) {
-		CFRHelper(&rootNode, 1.0, 1.0, 0);
+	TreeChanceNode rootNode = TreeChanceNode(mGameTree, 0);
+	float prevGameValue = CFRHelper(&rootNode, 1.0, 1.0, 0);
+	UpdateStratProbs(&rootNode);
+	int iCFR = 0;
+	while (true) {
+		int currValue = CFRHelper(&rootNode, 1.0, 1.0, 0);
 		UpdateStratProbs(&rootNode);
+		iCFR++;
+		float dEVpct = std::abs(currValue - prevGameValue) / (float) 100;
+		//If desired accuracy is reached, stop iterating.
+		if (dEVpct <= accuracy ){ 
+			break; 
+		}
+		prevGameValue = currValue;
 	}
-	UpdateNashStrategy(&rootNode, iterations);
-	return;*/
+	UpdateNashStrategy(&rootNode, iCFR);
+	return;
 }
 
 template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
