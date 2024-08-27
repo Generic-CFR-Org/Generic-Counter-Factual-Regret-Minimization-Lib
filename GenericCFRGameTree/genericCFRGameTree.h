@@ -505,19 +505,19 @@ inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	offset += sizeof(long);
 		
 	//Rock Paper Scissors Test.
-	float zeroProb = 0.0;
+	/*float zeroProb = 0.0;
 	int totalActionsSize = numActions * sizeof(float);
 	for (long iFloatOffset = offset; iFloatOffset < offset + totalActionsSize; iFloatOffset += sizeof(float)) {
 		SetFloatAtBytePtr(mGameTree + iFloatOffset, zeroProb);
 	}
-	SetFloatAtBytePtr(mGameTree + offset, 1.0);
+	SetFloatAtBytePtr(mGameTree + offset, 1.0);*/
 
 	//Stores floating point values for cumulative regret, strategy probabilities, and current regret.
-	/*float uniform_prob = 1.0 / ( (float) numActions );
+	float uniform_prob = 1.0 / ( (float) numActions );
 	int totalActionsSize = numActions * sizeof(float);
 	for (long iFloatOffset = offset; iFloatOffset < offset + totalActionsSize; iFloatOffset += sizeof(float)) {
 		SetFloatAtBytePtr(mGameTree + iFloatOffset, uniform_prob);
-	}*/
+	}
 	offset += totalActionsSize;
 	for (long iFloatOffset = offset; iFloatOffset < offset + ( 2 * totalActionsSize ); iFloatOffset += sizeof(float)) {
 		SetFloatAtBytePtr(mGameTree + iFloatOffset, 0.0f);

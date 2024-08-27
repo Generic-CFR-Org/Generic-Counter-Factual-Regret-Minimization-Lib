@@ -16,15 +16,20 @@ enum Street {
 typedef std::vector<Card*> PlayerCards;
 typedef std::vector<Card*> CardList;
 typedef std::vector<Bet*> Strategy;
+typedef std::vector<PlayerCards*> Range;
 
 
 
 class NLHPoker {
 public:
 	Strategy mAllPossibleBets;
+	Bet* mRaiseA;
+	Bet* mRaiseB;
+	Bet* mCheckOrCall;
+	Bet* mFold;
 	std::vector<Strategy> mAllStrategies;
-	std::vector<PlayerCards*> mPlayerOneRange;
-	std::vector<PlayerCards*> mPlayerTwoRange;
+	Range mPlayerOneRange;
+	Range mPlayerTwoRange;
 	CardList mFlop;
 	float mEffectiveStack;
 	float mStartingPot;
@@ -32,6 +37,7 @@ public:
 	
 	NLHPoker(CardList board, float effStack, float startingPot, int maxDepth);
 	CardList PossibleCards(PlayerCards playerCards, CardList drawnCards);
+	Range PlayerRange(bool isPlayerOne);
 };
  
 class PokerState {
@@ -62,13 +68,11 @@ public:
 
 class Bet {
 public:
-	float mBetPct;
-	float mBetBB;
-	float mCallAmount;
+	float betAmt;
 
 	bool mIsPct;
 	bool mIsBB;
-	bool mIsCall;
+	bool mIsCheckOrCall;
 
 	bool mIsFold;
 
@@ -85,13 +89,13 @@ static float newPotSize(Bet* bet, float oldPot, float effectiveStack) {
 		return oldPot;
 	}
 	if (bet->mIsPct) {
-		return std::min(oldPot *= (1.0 + bet->mBetPct), effectiveStack);
+		return std::min(oldPot *= (1.0 + bet->betAmt), effectiveStack);
 	}
 	if (bet->mIsBB) {
-		return std::min(oldPot += bet->mBetBB, effectiveStack);
+		return std::min(oldPot += bet->betAmt, effectiveStack);
 	}
-	if (bet->mIsCall) {
-		return std::min(oldPot += bet->mIsCall, effectiveStack);
+	if (bet->mIsCheckOrCall) {
+		return std::min(oldPot += bet->betAmt, effectiveStack);
 	}
 }
 
@@ -103,6 +107,8 @@ using GameNodeChildren = ChildrenFromGameNode<PokerState, PokerChance, Bet>;
 using ChanceNodeChildren = ChildrenFromChanceNode<PokerState, Bet>;
 
 using BetList = std::vector<Bet*>;
+
+Range PossibleRange(Range playerRange, CardList possibleCards);
 
 static bool PlayerOneHasAction(PokerState state, NLHPoker* pokerGame) {
 	return state.mPlayerOneHasAction;
@@ -146,6 +152,7 @@ static float ShowdownUtility(History history, NLHPoker* pokerGame) {
 static GameNodeChildren* childrenFromGame(PokerState state, BetList betStrat, NLHPoker* pokerGame) {
 
 	GameNodeChildren* allChildren;
+	bool playerOneHasAction = PlayerOneHasAction(state, pokerGame);
 
 	//Create a chance node for next street.
 	if (state.mBetDepth == pokerGame->mMaxBetDepth) {
@@ -169,8 +176,14 @@ static GameNodeChildren* childrenFromGame(PokerState state, BetList betStrat, NL
 		for (Bet* bet : betStrat) {
 			BetList betAsList = BetList(1, bet);
 
-			//If player calls move on to the next street or showdown.
-			if (bet->mIsCall && bet->mCallAmount > 0) {
+			/*Moving to next street.
+				- If player calls a bet, move on to the next street or showdown.
+				- If In position player has action and checks, move on to the next street or showdown.
+			*/
+			bool isBetCall = bet->mIsCheckOrCall && bet->betAmt > 0;
+			bool isBetCheck = bet->mIsCheckOrCall && bet->betAmt == 0;
+			bool moveToNextStreet = isBetCall || (!playerOneHasAction && isBetCheck);
+			if (moveToNextStreet) {
 				
 				if (currStreet == RIVER) {
 					//If Street is River, create terminal node.
@@ -184,6 +197,25 @@ static GameNodeChildren* childrenFromGame(PokerState state, BetList betStrat, NL
 					allChildren->AddChildChanceNode(nextStreetNode, betAsList);
 				}
 			}
+			/*At maximum bet depth.
+				- Action now on other player who can only call or fold.
+			*/
+			else if (state.mBetDepth == pokerGame->mMaxBetDepth) {
+				BetList nextPlayerStrat;
+				nextPlayerStrat.push_back(pokerGame->mCheckOrCall);
+				nextPlayerStrat.push_back(pokerGame->mFold);
+				float nextPot = newPotSize(bet, state.mPot, pokerGame->mEffectiveStack);
+				CardList nextPossibleCards = pokerGame->PossibleCards(*state.mpPlayerCards, state.mTurnAndRiver);
+				Range nextPlayerRange = PossibleRange(pokerGame->PlayerRange(!playerOneHasAction), nextPossibleCards);
+				for (PlayerCards* hand : nextPlayerRange) {
+					PokerState newState(!playerOneHasAction, hand, nextPot, state.mBetDepth, state.mTurnAndRiver);
+					allChildren->AddChildGameNode(newState, nextPlayerStrat, betAsList);
+				}
+			}
+			
+			
+
+
 			//If player is at maximum bet depth, opponent can only call / fold.
 
 
