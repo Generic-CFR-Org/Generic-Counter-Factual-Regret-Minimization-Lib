@@ -77,7 +77,8 @@ public:
 
 	long PreProcessor();
 	void ConstructTree();
-	void CFR(int, float);
+	void CFR(int);
+	void CFRAccuracy(float);
 	void PrintGameTree();
 
 
@@ -503,12 +504,20 @@ inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	mGameTree[offset] = mCumulativeOffsetAtDepth->at(depth + 1);
 	offset += sizeof(long);
 		
+	//Rock Paper Scissors Test.
+	float zeroProb = 0.0;
+	int totalActionsSize = numActions * sizeof(float);
+	for (long iFloatOffset = offset; iFloatOffset < offset + totalActionsSize; iFloatOffset += sizeof(float)) {
+		SetFloatAtBytePtr(mGameTree + iFloatOffset, zeroProb);
+	}
+	SetFloatAtBytePtr(mGameTree + offset, 1.0);
+
 	//Stores floating point values for cumulative regret, strategy probabilities, and current regret.
-	float uniform_prob = 1.0 / ( (float) numActions );
+	/*float uniform_prob = 1.0 / ( (float) numActions );
 	int totalActionsSize = numActions * sizeof(float);
 	for (long iFloatOffset = offset; iFloatOffset < offset + totalActionsSize; iFloatOffset += sizeof(float)) {
 		SetFloatAtBytePtr(mGameTree + iFloatOffset, uniform_prob);
-	}
+	}*/
 	offset += totalActionsSize;
 	for (long iFloatOffset = offset; iFloatOffset < offset + ( 2 * totalActionsSize ); iFloatOffset += sizeof(float)) {
 		SetFloatAtBytePtr(mGameTree + iFloatOffset, 0.0f);
@@ -1060,21 +1069,28 @@ inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 
 template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
 inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
-::CFR(int iterations, float accuracy) {
+::CFR(int iterations) {
 	
 	TreeChanceNode rootNode = TreeChanceNode(mGameTree, 0);
 	for (int iCFR = 0; iCFR < iterations; iCFR++) {
-		CFRHelper(&rootNode, 1.0, 1.0, 0);
-		//std::cout << "Iteration: " << iCFR << "\n";
-		//std::cout << "Before strat update\n";
-		//PrintGameTree();
-		
+		CFRHelper(&rootNode, 1.0, 1.0, 0);		
 		UpdateStratProbs(&rootNode);
-		//std::cout << "\nAfter strat update:\n\n";
-		//PrintGameTree();
+		
 	}
 	UpdateNashStrategy(&rootNode, iterations);
 	return;
+}
+
+template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>
+inline void CFRGameTree<GameState, ChanceNode, Action, GameInfo>
+::CFRAccuracy(float accuracy) {
+
+	/*for (int iCFR = 0; iCFR < iterations; iCFR++) {
+		CFRHelper(&rootNode, 1.0, 1.0, 0);
+		UpdateStratProbs(&rootNode);
+	}
+	UpdateNashStrategy(&rootNode, iterations);
+	return;*/
 }
 
 template<typename GameState, typename ChanceNode, typename Action, typename GameInfo>

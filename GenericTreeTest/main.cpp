@@ -16,8 +16,9 @@ int main(int argc, char* argv[]) {
 	CFRTree* tree = new CFRTree(game, &Game::childrenFromGame, &Game::childrenFromChance, &Game::player1Action, game->chanceNode, &Game::TerminalRegret);
 	
 	tree->ConstructTree();
-	
-	tree->CFR(300, 0);
+	std::cout << "Before CFR: \n\n";
+
+	tree->CFR(5000);
 
 	std::cout << "After CFR: \n\n";
 	tree->PrintGameTree();
