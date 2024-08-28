@@ -18,30 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\Card.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\Deck.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\HoleCards.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RockPaperScissors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NoLimitHoldem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\Card.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\Deck.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\HoleCards.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

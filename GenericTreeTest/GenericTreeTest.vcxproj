@@ -131,9 +131,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\Card.cpp" />
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\Deck.cpp" />
-    <ClCompile Include="..\..\PokerSolver\PokerSolver\HoleCards.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -145,10 +142,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\Card.h" />
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\Deck.h" />
-    <ClInclude Include="..\..\PokerSolver\PokerSolver\HoleCards.h" />
-    <ClInclude Include="NoLimitHoldem.h" />
     <ClInclude Include="RockPaperScissors.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
