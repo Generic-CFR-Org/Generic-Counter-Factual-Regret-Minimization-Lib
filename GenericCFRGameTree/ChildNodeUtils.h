@@ -118,6 +118,7 @@ public:
 		}
 		delete mChildNodes;
 	}
+	int size() {return mChildNodes->size(); }
 };
 
 
@@ -140,8 +141,8 @@ public:
 	typedef GameNodeChildChanceNode<ChanceNode, Action> ChildNode;
 
 	void AddChildNode(ChanceNode chanceNode, ActionList actionsToChild) {
-		ChildNode chanceNode = new ChildNode(chanceNode, actionsToChild);
-		this->mChildNodes->push_back(chanceNode);
+		ChildNode* childNode = new ChildNode(chanceNode, actionsToChild);
+		this->mChildNodes->push_back(childNode);
 	}
 };
 
@@ -199,17 +200,11 @@ public:
 	ChildGameNodes *mpChildGameNodes;
 	ChildChanceNodes *mpChildChanceNodes;
 	ChildTerminalNodes *mpChildTerminalNodes;
-	int gameChildCnt;
-	int chanceChildCnt;
-	int terminalChildCnt;
 
 	ChildrenFromGameNode() {
 		mpChildGameNodes = new ChildGameNodes();
 		mpChildChanceNodes = new ChildChanceNodes();
 		mpChildTerminalNodes = new ChildTerminalNodes();
-		gameChildCnt = 0;
-		chanceChildCnt = 0;
-		terminalChildCnt = 0;
 	}
 	~ChildrenFromGameNode() {
 		delete mpChildGameNodes;
@@ -223,27 +218,24 @@ public:
 
 	void AddChildGameNode(GameState gameState, ActionList strategy, ActionList actionsToChild) {
 		mpChildGameNodes->AddChildNode(gameState, strategy, actionsToChild);
-		gameChildCnt += 1;
 	}
 
 	void AddChildChanceNode(ChanceNode chanceNode, ActionList actionsToChild) {
 		mpChildChanceNodes->AddChildNode(chanceNode, actionsToChild);
-		chanceChildCnt += 1;
 	}
 
 	void AddChildTerminalNode(ActionList actionsToChild) {
 		mpChildTerminalNodes->AddChildNode(actionsToChild);
-		terminalChildCnt += 1;
 	}
 
 	int GameSize() {
-		return gameChildCnt;
+		return mpChildGameNodes->size();;
 	}
 	int ChanceSize() {
-		return chanceChildCnt;
+		return mpChildChanceNodes->size();
 	}
 	int TerminalSize() {
-		return terminalChildCnt;
+		return mpChildTerminalNodes->size();
 	}
 };
 
@@ -264,14 +256,12 @@ public:
 
 	ChildGameNodes* mpChildGameNodes;
 	ChildTerminalNodes* mpChildTerminalNodes;
-	int childCnt;
-	int terminalChildCnt;
+
 
 	ChildrenFromChanceNode() {
 		mpChildGameNodes = new ChildGameNodes();
 		mpChildTerminalNodes = new ChildTerminalNodes();
-		childCnt = 0;
-		terminalChildCnt = 0;
+
 	}
 	~ChildrenFromChanceNode() {
 		delete mpChildGameNodes;
@@ -283,20 +273,20 @@ public:
 
 	void AddChildGameNode(GameState gameState, ActionList strategy, float probToChild) {
 		mpChildGameNodes->AddChildNode(gameState, strategy, probToChild);
-		childCnt += 1;
+
 	}
 
 	void AddChildTerminalNode(float probToChild) {
 		mpChildTerminalNodes->AddChildNode(probToChild);
-		terminalChildCnt += 1;
+
 	}
 
 	int GameSize() {
-		return childCnt;
+		return mpChildGameNodes->size();
 	}
 
 	int TerminalSize() {
-		return terminalChildCnt;
+		return mpChildTerminalNodes->size();
 	}
 };
 

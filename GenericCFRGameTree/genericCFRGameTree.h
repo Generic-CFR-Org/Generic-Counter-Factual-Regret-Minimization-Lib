@@ -313,7 +313,7 @@ inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	//Update SizeAtDepth for future tree construction.
 	mSizeAtDepth->at(depth) += nodeSize;
 	
-	std::cout << "Game Node at depth " << depth << " size: " << nodeSize << "\n";
+	/*std::cout << "Game Node at depth " << depth << " size: " << nodeSize << "\n";*/
 	return nodeSize + childrenTotalSize;
 }
 
@@ -326,7 +326,7 @@ template<typename GameState, typename ChanceNode, typename Action, typename Game
 inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 ::PreProcessorHelperTerminal(int depth, int uniqueHistoriesCnt){
 	
-	std::cout << "Unique Terminal count: " << uniqueHistoriesCnt << "\n";
+	/*std::cout << "Unique Terminal count: " << uniqueHistoriesCnt << "\n";*/
 
 	long terminalNodeSize = sizeof(float);
 	long totalTerminalNodesSize = terminalNodeSize * uniqueHistoriesCnt;
@@ -337,7 +337,7 @@ inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	else {
 		mSizeAtDepth->at(depth) += totalTerminalNodesSize;
 	}
-	std::cout << "Terminal size : " << terminalNodeSize << "\n";
+	/*std::cout << "Terminal size : " << terminalNodeSize << "\n";*/
 	return totalTerminalNodesSize;
 }
 
@@ -423,7 +423,7 @@ inline long CFRGameTree<GameState, ChanceNode, Action, GameInfo>
 	//Free memory on heap
 	delete pChanceNodeChildren;
 
-	std::cout << "Chance Node at depth " << depth << " size: "<< nodeSize << "\n";
+	/*std::cout << "Chance Node at depth " << depth << " size: "<< nodeSize << "\n";*/
 	return nodeSize + childrenTotalSize;
 }
 
