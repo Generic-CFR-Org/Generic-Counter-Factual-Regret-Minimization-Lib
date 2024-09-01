@@ -42,7 +42,6 @@ namespace Cfr {
 	};
 
 
-
 	int playerNodeSize = Cfr::CfrTrees::Search::PlayerNodeSizeInTree();
 	int terminalNodeSize = Cfr::CfrTrees::Search::TerminalNodeSizeInTree();
 
@@ -79,6 +78,13 @@ namespace Cfr {
 			return 1;
 		}
 
+		long InfoSetSizeAtDepth(InfoSetSizes& infoSets) {
+			long totalSize = 0;
+			for (auto it : infoSets) {
+				totalSize += it.second;
+			}
+		}
+
 		void ExplorePlayerNodeChildren
 		(
 			long& cumulativeSize,
@@ -89,7 +95,6 @@ namespace Cfr {
 			InfoSetSizes& infoSetSizes
 		) 
 		{
-
 			for (PlayerNodePair playerNodePair : playerChildNodes) {
 
 				PlayerChild exploredChildNode = playerNodePair.first;
@@ -107,9 +112,7 @@ namespace Cfr {
 						//Add to next children.
 						nextPlayerChildNodes.push_back(playerChild);
 					}
-
 					//Add current node size to nextParentChildren for previous level to use.
-
 					nodeSizes.push_back(playerNodeSize);
 
 					//Find history hash to track # of info sets and their sizes.
@@ -148,8 +151,8 @@ namespace Cfr {
 			ChanceChildList& nextChanceChildNodes,
 			std::vector<uint8_t>& nodeSizes,
 			InfoSetSizes& infoSetSizes
-		) {
-
+		) 
+		{
 			for (ChanceNodePair playerNodePair : chanceChildNodes) {
 
 				ChanceChild exploredChildNode = playerNodePair.first;
@@ -167,9 +170,7 @@ namespace Cfr {
 						//Add to next children.
 						nextPlayerChildNodes.push_back(playerChild);
 					}
-
 					//Add current node size to nextParentChildren for previous level to use.
-
 					nodeSizes.push_back(playerNodeSize);
 
 					//Find history hash to track # of info sets and their sizes.
@@ -192,17 +193,22 @@ namespace Cfr {
 					}
 				}
 				else {
-
 					//If node is terminal. Just add node size to nodeSizes array.
 					nodeSizes.push_back(terminalNodeSize);
 				}
-
 			}
 		}
 
+		void ConstructInfoSetTable
+		(
+			long depthOffset, PlayerChildList& playerChildNodes,
+			ChanceChildList& chanceChildNodes, 
+		)
+		{}
+
 		void ConstructTreeHelperBFS
 		(
-			int depth, long startOffset, 
+			int depth, long startSearchOffset, long startInfosetOffset,
 			PlayerChildList& playerChildNodes,
 			ChanceChildList& chanceChildNodes,
 			std::vector<uint8_t>& numChildrenPerNode,
@@ -213,49 +219,33 @@ namespace Cfr {
 			ChanceChildList nextChanceNodeChildren;
 
 			//Update next offset for next level of the tree.
-			long nextOffset = startOffset;
+			long nextSearchOffset = startSearchOffset;
 
 			//Initialize unordered map for current depth to track info set sizes.
 			InfoSetSizes infoSetSizes;
+			
+			ExplorePlayerNodeChildren
+			(
+				nextSearchOffset, playerChildNodes, nextPlayerNodeChildren,
+				nextChanceNodeChildren, numChildrenPerNode, infoSetSizes
+			);
+			ExploreChanceNodeChildren
+			(
+				nextSearchOffset, chanceChildNodes, nextPlayerNodeChildren,
+				nextChanceNodeChildren, numChildrenPerNode, infoSetSizes
+			);
 
-			//Explore all player node children.
-			for (PlayerNodePair playerNodePair : playerChildNodes) {
-
-				PlayerChild exploredChildNode = playerNodePair.first;
-				CfrHistoryNode* exploredHistoryNode = playerNodePair.second;
-				if (exploredChildNode.IsPlayerNode()) {
-
-					//Get Actions for current player node to find children.
-					PlayerNode currNode = exploredChildNode.ChildPlayerNode();
-					std::vector<Action> actions = currNode.ActionList();
-
-					for (Action a : actions) {
-						CfrTreeNode child = currNode.Child(a);
-						//Once we get the child, convert it into a child node
-						PlayerChild playerChild = PlayerChild(child, a);
-						//Add to next children.
-						nextPlayerNodeChildren.push_back(playerChild);
-					}
-
-					//Add current node size to nextChildSizes for previous level to use.
-					nextChildSizes.push_back(actions.size());
-
-					//Find history hash to track # of info sets and their sizes.
-					std::string historyHash = exploredHistoryNode->HistoryHash();
-					infoSetSizes.insert(historyHash, actions.size());
-				}
-				else if (exploredChildNode.IsChanceNode()) {
-
-				}
-				else {
-
-				}
-
+			/*Once all nodes are explored, explore next depth unless there
+			  are no more children, in which case we move to tree construction.*/
+			if (nextPlayerNodeChildren.size() + nextChanceNodeChildren.size() == 0) {
+				this->mpGameTree = new byte[nextOffset];
+				this->mpRegretTable = new byte[startInfosetOffset];
 			}
+
+			//Set search tree nodes and info sets.
+
+
 		}
-
-
-
 	};
 
 
