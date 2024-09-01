@@ -112,6 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -139,15 +140,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="cfr.h" />
     <ClInclude Include="cfrGameTreeUtils.h" />
+    <ClInclude Include="nodes.h" />
+    <ClInclude Include="cfr_concepts.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="gameHistory.h" />
     <ClInclude Include="genericCFRGameTree.h" />
-    <ClInclude Include="ChildNodeUtils.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="cfr_tree_nodes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfrGameTreeUtils.cpp" />
+    <ClCompile Include="cfr_infoset.cpp" />
+    <ClCompile Include="cfr_search_tree.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

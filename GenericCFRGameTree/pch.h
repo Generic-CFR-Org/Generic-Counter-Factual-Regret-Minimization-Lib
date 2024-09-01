@@ -15,5 +15,7 @@
 #include <algorithm>
 #include <utility>
 #include <stdexcept>
+#include <concepts>
+#include <functional>
 
 #endif //PCH_H

@@ -3,7 +3,7 @@
 #include "vector"
 #include <utility>
 #include <tuple>
-#include <genericCFRGameTree.h>
+#include "cfr.h"
 
 
 
@@ -48,11 +48,6 @@ public:
 		}
 	};
 
-	typedef HistoryNode<GameState, ChanceNode, Action> GameHistoryNode;
-	typedef std::vector<GameHistoryNode> History;
-
-	using GameNodeChildren = ChildrenFromGameNode<RockPaperScissors::GameState, RockPaperScissors::ChanceNode, RockPaperScissors::Action>;
-	using ChanceNodeChildren = ChildrenFromChanceNode<RockPaperScissors::GameState, RockPaperScissors::Action>;
 
 	//Add static functions that determine whether a GameNode / ChanceNode is null. 
 	static float TerminalRegret(History history, RockPaperScissors* gameInfo) {

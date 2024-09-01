@@ -27,10 +27,16 @@
     <ClInclude Include="cfrGameTreeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ChildNodeUtils.h">
+    <ClInclude Include="cfr_concepts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gameHistory.h">
+    <ClInclude Include="nodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cfr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cfr_tree_nodes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,6 +45,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cfrGameTreeUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cfr_search_tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cfr_infoset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
