@@ -36,7 +36,7 @@ public:
 		bool IsPlayerOne() { return player_with_action; }
 		std::string ToHash() { return std::string(1, player_with_action); }
 		std::string ToInfoSetHash() { return std::string(1, player_with_action); }
-		Node Child(Action a) {
+		Node Child(Action a, RockPaperScissors* gameInfo) {
 			if (player_with_action) {
 				Node childNode{Player{false}, a};
 				return childNode;
@@ -46,7 +46,7 @@ public:
 				return terminalNode;
 			}
 		}
-		std::vector<Action> ActionList() {
+		std::vector<Action> ActionList(RockPaperScissors* gameInfo) {
 			Action rock{'r'};
 			Action paper{'p'};
 			Action scissors{'s'};
@@ -74,7 +74,7 @@ public:
 			prob = other.prob;
 		}
 		std::string ToHash() { return std::string(1, ' '); }
-		std::vector<Node> Children() {
+		std::vector<Node> Children(RockPaperScissors* gameInfo) {
 			std::vector<Node> startList;
 			Player playerOne{true};
 			Node playerNode{playerOne, 1.0};

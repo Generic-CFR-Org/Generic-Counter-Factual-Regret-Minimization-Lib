@@ -14,9 +14,9 @@ using byte = TreeUtils::byte;
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode> &&
-		 CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode> &&
-		 CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode> &&
-		 CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode> &&
+		 CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass> &&
+		 CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass> &&
+		 CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass> &&
 		 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass> &&
 		 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 class CfrTree {
@@ -148,9 +148,9 @@ private:
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -163,9 +163,9 @@ ConstructTree() {
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -176,9 +176,9 @@ PrintTree() {
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -200,9 +200,9 @@ BaseCFR(int iterations) {
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -270,9 +270,9 @@ inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -292,9 +292,9 @@ PreProcessTree(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline int CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -305,9 +305,9 @@ ExploreNode(
 	if (searchNode->IsPlayerNode()) {
 		
 		PlayerNode currNode = searchNode->GetPlayerNode();
-		std::vector<Action> actions = currNode.ActionList();
+		std::vector<Action> actions = currNode.ActionList(mpStaticGameInfo);
 		for (Action a : actions) {
-			CfrTreeNode child = currNode.Child(a);
+			CfrTreeNode child = currNode.Child(a, mpStaticGameInfo);
 
 			//Allocate child, point to parent, and add to next nodes to explore.
 			CfrTreeNode* nextChild = new CfrTreeNode(child, searchNode);
@@ -323,7 +323,7 @@ ExploreNode(
 	else if (searchNode->IsChanceNode()) {
 		
 		ChanceNode currNode = searchNode->GetChanceNode();
-		std::vector<CfrClientNode> children = currNode.Children();
+		std::vector<CfrClientNode> children = currNode.Children(mpStaticGameInfo);
 		//Add each chance node child to next chance child nodes.
 		for (CfrClientNode child : children) {
 
@@ -340,9 +340,9 @@ ExploreNode(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -362,9 +362,9 @@ SetAllNodes(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline byte* CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -372,7 +372,7 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 		
 	if (searchNode->IsPlayerNode()) {
 		PlayerNode currNode = searchNode->GetPlayerNode();
-		std::vector<Action> actions = currNode.ActionList();
+		std::vector<Action> actions = currNode.ActionList(mpStaticGameInfo);
 		int numChildren = actions.size();
 		byte* childStartOffset = searchNode->GetChildOffset();
 		bool isPlayerOne = currNode.IsPlayerOne();
@@ -392,7 +392,7 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 	}
 	else if (searchNode->IsChanceNode()) {
 		ChanceNode currNode = searchNode->GetChanceNode();
-		std::vector<CfrClientNode> children = currNode.Children();
+		std::vector<CfrClientNode> children = currNode.Children(mpStaticGameInfo);
 		std::vector<float> probList = ToFloatList(children);
 		byte* childStartOffset = searchNode->GetChildOffset();
 
@@ -420,9 +420,9 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -440,9 +440,9 @@ SetInfoSets(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -459,9 +459,9 @@ SetSearchNodes(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline float CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -531,9 +531,9 @@ BaseCfrRecursive(
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
@@ -563,9 +563,9 @@ NewStrategy(InfoSetData& infoSet) {
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
-CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
-CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
-CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
 CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::

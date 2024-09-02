@@ -341,27 +341,27 @@ namespace CfrConcepts {
 	
 
 
-	template<typename Action, typename PlayerNode, typename ChanceNode>
-	concept PlayerNodeChildFunc = requires( Action a, PlayerNode p ) {
+	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
+	concept PlayerNodeChildFunc = requires( Action a, PlayerNode p, GameState g ) {
 
 		/*Player Node must have function that returns child node of an action.*/
-		{ p.Child(a) } -> std::convertible_to<ClientNode<Action, PlayerNode, ChanceNode>>;
+		{ p.Child(a, &g) } -> std::convertible_to<ClientNode<Action, PlayerNode, ChanceNode>>;
 
 	};
 
-	template<typename Action, typename PlayerNode>
-	concept PlayerNodeActionListFunc = requires ( PlayerNode p ) {
+	template<typename Action, typename PlayerNode, typename GameState>
+	concept PlayerNodeActionListFunc = requires ( PlayerNode p, GameState g ) {
 		/*Player node must have function that returns a list of actions it can take*/
-		{ p.ActionList() } -> std::convertible_to<std::vector<Action>>;
+		{ p.ActionList(&g) } -> std::convertible_to<std::vector<Action>>;
 	};
 
 
 
-	template<typename Action, typename PlayerNode, typename ChanceNode>
-	concept ChanceNodeChildrenFunc = requires( Action a, PlayerNode p, ChanceNode c ) {
+	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
+	concept ChanceNodeChildrenFunc = requires( Action a, PlayerNode p, ChanceNode c, GameState g ) {
 
 		/*Chance Node must have function that returns vector of child nodes*/
-		{ c.Children() } -> std::convertible_to<std::vector<ClientNode<Action, PlayerNode, ChanceNode>>>;
+		{ c.Children(&g) } -> std::convertible_to<std::vector<ClientNode<Action, PlayerNode, ChanceNode>>>;
 
 	};
 
