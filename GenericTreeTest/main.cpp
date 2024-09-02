@@ -18,12 +18,12 @@ int main(int argc, char* argv[]) {
 	CFRTree* tree = new CFRTree(game, root);
 	
 	tree->ConstructTree();
-	std::cout << "Before CFR: \n\n";
-	tree->PrintTree();
+	
 	std::cout << tree->TreeSize() << "\n";
 	std::cout << tree->SearchTreeSize() << "\n";
 	std::cout << tree->InfoSetTableSize() << "\n";
-	tree->BaseCFR(100);
+	tree->BaseCFR(50);
+	std::cout << "After CFR: \n\n";
 	tree->PrintTree();
 	/*tree->PrintGameTree();*/
 
@@ -32,3 +32,4 @@ int main(int argc, char* argv[]) {
 	std::cout << "After CFR: \n\n";
 	tree->PrintGameTree();*/
 }
+

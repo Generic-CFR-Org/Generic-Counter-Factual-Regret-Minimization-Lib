@@ -186,6 +186,7 @@ BaseCFR(int iterations) {
 
 	SearchTreeNode rootChance = SearchTreeNode(mpGameTree);
 	for (int iCfr = 0; iCfr < iterations; iCfr++) {
+		
 		BaseCfrRecursive(rootChance, true, iCfr, 1, 1);
 		BaseCfrRecursive(rootChance, false, iCfr, 1, 1);
 	}
@@ -524,6 +525,7 @@ BaseCfrRecursive(
 			}
 			NewStrategy(infoSet);
 		}
+		return val;
 	}
 }
 
@@ -539,14 +541,23 @@ NewStrategy(InfoSetData& infoSet) {
 	float regretSum = 0;
 	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
 		float actionRegret = infoSet.GetCumulativeRegret(iAction);
+		regretSum += actionRegret;
 		if (actionRegret > 0) {
-			regretSum += actionRegret;
+			infoSet.SetCurrentStrategy(actionRegret, iAction);
+		}
+		else {
+			infoSet.SetCurrentStrategy(0.0, iAction);
 		}
 	}
+	float uniformProb = 1.0 / (float) infoSet.numActions();
 	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
-		float cumRegret = infoSet.GetCumulativeRegret(iAction);
-		float updatedProb = regretSum > 0 ? (std::max(cumRegret, 0.0f) / regretSum ) : 1.0 / (float) infoSet.numActions();
-		infoSet.SetCurrentStrategy(updatedProb, iAction);
+		if (regretSum > 0) {
+			float currStrat = infoSet.GetCurrentStrategy(iAction);
+			infoSet.SetCurrentStrategy(currStrat / regretSum, iAction);
+		}
+		else {
+			infoSet.SetCurrentStrategy(uniformProb, iAction);
+		}
 	}
 }
 

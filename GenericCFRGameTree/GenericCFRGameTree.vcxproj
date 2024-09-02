@@ -147,7 +147,6 @@
     <ClInclude Include="cfr_tree_nodes.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cfrGameTreeUtils.cpp" />
     <ClCompile Include="cfr_infoset.cpp" />
     <ClCompile Include="cfr_search_tree.cpp" />
     <ClCompile Include="pch.cpp">

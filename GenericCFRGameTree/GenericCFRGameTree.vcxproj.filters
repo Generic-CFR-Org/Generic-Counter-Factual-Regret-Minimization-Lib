@@ -35,9 +35,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cfrGameTreeUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cfr_search_tree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
