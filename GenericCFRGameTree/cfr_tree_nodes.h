@@ -15,7 +15,7 @@ public:
 	typedef unsigned char byte;
 	static const int NON_TERMINAL_BASE_SIZE = sizeof(char) + sizeof(uint8_t) + sizeof(byte*);
 	static const int TERMINAL_SIZE = sizeof(char) + sizeof(float);
-	static const int PLAYER_NODE_SIZE = NON_TERMINAL_BASE_SIZE + sizeof(byte*);
+	static const int PLAYER_NODE_SIZE = NON_TERMINAL_BASE_SIZE + sizeof(byte*) + sizeof(char);
 	
 	static void SetFloatAtBytePtr(unsigned char* pByte, float val) {
 		float* pFloat = reinterpret_cast<float*>( pByte );
@@ -38,7 +38,7 @@ public:
 	}
 
 	static int PlayerNodeSizeInTree() { 
-		return NON_TERMINAL_BASE_SIZE + sizeof(byte*); 
+		return NON_TERMINAL_BASE_SIZE + sizeof(byte*) + sizeof(bool); 
 	}
 
 	static int ChanceNodeSizeInTree(int numChildren) {
@@ -47,7 +47,7 @@ public:
 
 	static int TerminalNodeSizeInTree() { return TERMINAL_SIZE; }
 
-	static byte* SetPlayerNode(byte* treePos, int numChildren, byte* childrenStart, byte* infoSetPointer);
+	static byte* SetPlayerNode(byte* treePos, int numChildren, byte* childrenStart, bool isPlayerOne, byte* infoSetPointer);
 
 	static byte* SetChanceNode(byte* treePos, byte* childrenStart, std::vector<float>& childProbs);
 
@@ -72,6 +72,7 @@ protected:
 	byte* mpChildStartOffset = 0;
 
 	//Used to access Information Set in Information Set table for player nodes.
+	bool mIsPlayerOne = (bool) true;
 	byte* mpInfoSetPtr = (byte*) 0;
 
 	//Used to access probabilities for each child for chance nodes.
@@ -98,6 +99,7 @@ public:
 
 	uint8_t NumChildren() { return mNumChildren; }
 	byte* ChildrenStartOffset() { return mpChildStartOffset; }
+	bool IsPlayerOne() { return mIsPlayerOne; }
 	byte* InfoSetPosition() { return mpInfoSetPtr; }
 	std::vector<float> ChildProbabilities() {
 		std::vector<float> probs;

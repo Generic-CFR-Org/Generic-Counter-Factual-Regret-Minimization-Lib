@@ -49,9 +49,15 @@ public:
 		*/
 	void ConstructTree();
 
+	long TreeSize() { return mSearchTreeSize + mInfoSetTableSize; }
+
+	long SearchTreeSize() { return mSearchTreeSize; }
+
+	long InfoSetTableSize() { return mInfoSetTableSize; }
+
 	void PrintTree();
 
-	/*void BaseCFR();*/
+	void BaseCFR(int iterations);
 
 private:
 
@@ -125,6 +131,13 @@ private:
 	);
 
 	void PrintTreeRecursive(SearchTreeNode& node);
+
+	float BaseCfrRecursive(
+		SearchTreeNode& node, bool isPlayerOne, int iteration,
+		float playerOneReachProb, float playerTwoReachProb
+	);
+
+	void NewStrategy(InfoSetData& infoSet);
 };
 			 
 /*
@@ -159,6 +172,23 @@ inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 PrintTree() {
 	SearchTreeNode rootChance = SearchTreeNode(mpGameTree);
 	PrintTreeRecursive(rootChance);
+}
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
+inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+BaseCFR(int iterations) {
+
+	SearchTreeNode rootChance = SearchTreeNode(mpGameTree);
+	for (int iCfr = 0; iCfr < iterations; iCfr++) {
+		BaseCfrRecursive(rootChance, true, iCfr, 1, 1);
+		BaseCfrRecursive(rootChance, false, iCfr, 1, 1);
+	}
 }
 
 /*
@@ -329,7 +359,6 @@ SetAllNodes(
 	SetSearchNodes(searchOffset, nodesToSet, infoSetPosMap);
 }
 
-
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
 CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
@@ -345,6 +374,7 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 		std::vector<Action> actions = currNode.ActionList();
 		int numChildren = actions.size();
 		byte* childStartOffset = searchNode->GetChildOffset();
+		bool isPlayerOne = currNode.IsPlayerOne();
 
 		//Use history hash to find info set position.
 		std::string historyHash = searchNode->HistoryHash();
@@ -357,7 +387,7 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 		delete searchNode;
 
 		//Set player node and return byte* to next node.
-		return TreeUtils::SetPlayerNode(nodePos, numChildren, childStartOffset, infoSetPos);
+		return TreeUtils::SetPlayerNode(nodePos, numChildren, childStartOffset, isPlayerOne, infoSetPos);
 	}
 	else if (searchNode->IsChanceNode()) {
 		ChanceNode currNode = searchNode->GetChanceNode();
@@ -425,6 +455,101 @@ SetSearchNodes(
 	}
 }
 
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
+inline float CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+BaseCfrRecursive(
+	SearchTreeNode& node, bool isPlayerOne, int iteration,
+	float playerOneReachProb, float playerTwoReachProb
+) {
+	
+	if (node.IsTerminalNode()) {
+		return node.Utility();
+	}
+	else if (node.IsChanceNode()) {
+		float val = 0;
+		int childIndex = 0;
+		std::vector<float> childProbabilities = node.ChildProbabilities();
+		std::vector<SearchTreeNode> children = node.AllChildren();
+		for (SearchTreeNode& child : children) {
+			float childUtil = BaseCfrRecursive(child, isPlayerOne, iteration, playerOneReachProb, playerTwoReachProb);
+			float childReachProb = childProbabilities.at(childIndex);
+			val += childReachProb * childUtil;
+			childIndex++;
+		}
+	}
+	else {
+		float val = 0;
+		int numChildren = node.NumChildren();
+		std::vector<SearchTreeNode> children = node.AllChildren();
+		std::vector<float> childUtilities(numChildren, 0);
+		InfoSetData infoSet = InfoSetData(node.InfoSetPosition());
+		for (int iAction = 0; iAction < numChildren; iAction++) {
+			float currStratProb = infoSet.GetCurrentStrategy(iAction);
+			float childUtility;
+			if (node.IsPlayerOne()) {
+				
+				childUtility = BaseCfrRecursive(children.at(iAction), isPlayerOne,
+												iteration, currStratProb * playerOneReachProb,
+												playerTwoReachProb);
+			}
+			else {
+				childUtility = BaseCfrRecursive(children.at(iAction), isPlayerOne,
+												iteration, playerOneReachProb,
+												currStratProb * playerTwoReachProb);
+			}
+			childUtilities.at(iAction) = childUtility;
+			val += currStratProb * childUtility;
+		}
+		if (node.IsPlayerOne() == isPlayerOne) {
+			float regretProb;
+			float stratProb;
+			if (isPlayerOne) {
+				regretProb = playerTwoReachProb;
+				stratProb = playerOneReachProb;
+			}
+			else {
+				regretProb = playerOneReachProb;
+				stratProb = playerTwoReachProb;
+			}
+			for (int iAction = 0; iAction < numChildren; iAction++) {
+				infoSet.AddToCumulativeRegret(regretProb * (childUtilities.at(iAction) - val), iAction);
+				infoSet.AddToCumulativeStrategy(stratProb * infoSet.GetCurrentStrategy(iAction), iAction);
+			}
+			NewStrategy(infoSet);
+		}
+	}
+}
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
+CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
+CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode>&&
+CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
+CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
+inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+NewStrategy(InfoSetData& infoSet) {
+	float regretSum = 0;
+	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
+		float actionRegret = infoSet.GetCumulativeRegret(iAction);
+		if (actionRegret > 0) {
+			regretSum += actionRegret;
+		}
+	}
+	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
+		float cumRegret = infoSet.GetCumulativeRegret(iAction);
+		float updatedProb = regretSum > 0 ? (std::max(cumRegret, 0.0f) / regretSum ) : 1.0 / (float) infoSet.numActions();
+		infoSet.SetCurrentStrategy(updatedProb, iAction);
+	}
+}
+
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
 CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode>&&
@@ -437,12 +562,10 @@ PrintTreeRecursive(SearchTreeNode& node) {
 	
 	std::cout << node;
 	if (node.IsPlayerNode() || node.IsChanceNode()) {
-		std::cout << node;
-		byte* childOffset = node.ChildrenStartOffset();
-		for (int i = 0; i < node.NumChildren(); i++) {
-			SearchTreeNode child = SearchTreeNode(childOffset);
-			childOffset = child.NextNodePos();
-			PrintTreeRecursive(child);
+		
+		std::vector<SearchTreeNode> children = node.AllChildren();
+		for (SearchTreeNode& childNode : children) {
+			PrintTreeRecursive(childNode);
 		}
 	}
 	return;

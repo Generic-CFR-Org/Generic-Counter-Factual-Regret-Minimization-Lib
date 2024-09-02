@@ -20,6 +20,11 @@ int main(int argc, char* argv[]) {
 	tree->ConstructTree();
 	std::cout << "Before CFR: \n\n";
 	tree->PrintTree();
+	std::cout << tree->TreeSize() << "\n";
+	std::cout << tree->SearchTreeSize() << "\n";
+	std::cout << tree->InfoSetTableSize() << "\n";
+	tree->BaseCFR(100);
+	tree->PrintTree();
 	/*tree->PrintGameTree();*/
 
 	/*tree->CFR(1000);

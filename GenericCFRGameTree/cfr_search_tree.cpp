@@ -6,7 +6,7 @@
 TreeUtils::byte* TreeUtils::SetPlayerNode
 (
 	byte* treePos, int numChildren, byte* childrenStart,
-	byte* infoSetPointer
+	bool isPlayerOne, byte* infoSetPointer
 ) 
 {
 	byte* temp = treePos;
@@ -14,6 +14,7 @@ TreeUtils::byte* TreeUtils::SetPlayerNode
 	*(temp++) = (uint8_t) numChildren;
 	TreeUtils::SetBytePtrAtBytePtr(temp, childrenStart);
 	temp += sizeof(byte*);
+	*(temp++) = (bool) isPlayerOne;
 	TreeUtils::SetBytePtrAtBytePtr(temp, infoSetPointer);
 	temp += sizeof(byte*);
 	return temp;
@@ -55,7 +56,9 @@ SearchTreeNode::SearchTreeNode(byte* pos) {
 		pos += sizeof(byte*);
 	}
 	if (mIdentifier == 'p') {
+		mIsPlayerOne = (bool) *(pos++);
 		mpInfoSetPtr = TreeUtils::GetBytePtrAtBytePtr(pos);
+		pos += sizeof(byte*);
 	}
 	if (mIdentifier == 'c') {
 		mpChildProbs = reinterpret_cast<float*>(pos);
