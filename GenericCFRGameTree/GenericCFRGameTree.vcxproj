@@ -141,11 +141,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cfr.h" />
-    <ClInclude Include="cfrGameTreeUtils.h" />
     <ClInclude Include="nodes.h" />
-    <ClInclude Include="cfr_concepts.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="genericCFRGameTree.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="cfr_tree_nodes.h" />
   </ItemGroup>

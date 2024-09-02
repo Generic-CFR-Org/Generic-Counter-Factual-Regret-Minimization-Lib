@@ -2,53 +2,102 @@
 #include "pch.h"
 #include "framework.h"
 #include "cfr_tree_nodes.h"
-using namespace Cfr::CfrTrees;
 
 
-int InfoSets::InfoSetSize(int numActions) {
+int TreeUtils::InfoSetSize(int numActions) {
 	return sizeof(uint8_t) + ( 3 * numActions * sizeof(float) );
 }
 
-InfoSets::InfoSetData::InfoSetData(byte* pos) {
-	mNumActions = ( uint8_t ) * ( pos++ );
-	int arrSize = mNumActions * sizeof(float);
-	mpCurrStrategy = (float*) *( pos += arrSize );
-	mpCumStrategy = (float*) *( pos += arrSize );
-	mpCumRegret = (float*) *( pos += arrSize );
+TreeUtils::byte* TreeUtils::SetInfoSetNode(byte* pos, int numActions) {
+	*(pos++) = ( uint8_t ) numActions;
+	float uniformProb = 1.0 / (float) numActions;
+	for (int iUniformStrat = 0; iUniformStrat < numActions; iUniformStrat++) {
+		TreeUtils::SetFloatAtBytePtr(pos, uniformProb);
+		pos += sizeof(float);
+	}
+	for (int iCumulative = 0; iCumulative < 2 * numActions; iCumulative++) {
+		TreeUtils::SetFloatAtBytePtr(pos, 0.0);
+		pos += sizeof(float);
+	}
+	//Return pointer to next info set.
+	return pos;
 }
 
-int InfoSets::InfoSetData::size() {
+using byte = TreeUtils::byte;
+
+InfoSetData::InfoSetData(byte* pos) {
+	mNumActions = ( uint8_t ) * ( pos++ );
+	int arrSize = mNumActions * sizeof(float);
+	mpCurrStrategy = reinterpret_cast<float*>(pos);
+	pos += arrSize;
+	mpCumStrategy = reinterpret_cast<float*>( pos );
+	pos += arrSize;
+	mpCumRegret = reinterpret_cast<float*>( pos );
+	pos += arrSize;
+}
+
+int InfoSetData::size() {
 	return sizeof(uint8_t) + ( 3 * mNumActions * sizeof(float) );
 }
 
-float InfoSets::InfoSetData::GetCurrentStrategy(int index) {
-	byte* iFloat = (byte*) ( mpCurrStrategy + index );
-	return GetFloatFromBytePtr(iFloat);
+int InfoSetData::numActions() {
+	return mNumActions;
 }
 
-float InfoSets::InfoSetData::GetCumulativeStrategy(int index) {
+float InfoSetData::GetCurrentStrategy(int index) {
+	byte* iFloat = (byte*) ( mpCurrStrategy + index );
+	return TreeUtils::GetFloatFromBytePtr(iFloat);
+}
+
+float InfoSetData::GetCumulativeStrategy(int index) {
 	byte* iFloat = (byte*) ( mpCumStrategy + index );
-	return GetFloatFromBytePtr(iFloat);
+	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
-float InfoSets::InfoSetData::GetCumulativeRegret(int index) {
+float InfoSetData::GetCumulativeRegret(int index) {
 	byte* iFloat = (byte*) ( mpCumRegret + index );
-	return GetFloatFromBytePtr(iFloat);
+	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
-void InfoSets::InfoSetData::SetCurrentStrategy(float prob, int index) {
+void InfoSetData::SetCurrentStrategy(float prob, int index) {
 	byte* iFloat = (byte*) ( mpCurrStrategy + index );
-	SetFloatAtBytePtr(iFloat, prob);
+	TreeUtils::SetFloatAtBytePtr(iFloat, prob);
 }
 
-void InfoSets::InfoSetData::AddToCumulativeStrategy(float prob, int index) {
+void InfoSetData::AddToCumulativeStrategy(float prob, int index) {
 	float newTotal = GetCumulativeStrategy(index) + prob;
 	byte* iFloat = (byte*) ( mpCumStrategy + index );
-	SetFloatAtBytePtr(iFloat, newTotal);
+	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
 }
 
-void InfoSets::InfoSetData::AddToCumulativeRegret(float prob, int index) {
+void InfoSetData::AddToCumulativeRegret(float prob, int index) {
 	float newTotal = GetCumulativeRegret(index) + prob;
 	byte* iFloat = (byte*) ( mpCumRegret + index );
-	SetFloatAtBytePtr(iFloat, newTotal);
+	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
+}
+
+std::ostream& operator<<(std::ostream& os, InfoSetData& infoSet) {
+	os << "Info set:\n";
+	int numActions = infoSet.numActions();
+	os << "Num actions: " << numActions << "\n";
+	os << " - " << "Current Strategy:  [";
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
+		os << " " << infoSet.GetCurrentStrategy(iAction) << " ,";
+	}
+	os << " " << infoSet.GetCurrentStrategy(numActions - 1) << " ]\n";
+
+	os << " - " << "Cumulative Strategy Probabilities:  [";
+
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
+		os << " " << infoSet.GetCumulativeStrategy(iAction) << " ,";
+	}
+	os << " " << infoSet.GetCumulativeStrategy(numActions - 1) << " ]\n";
+
+	os << " - " << "Cumulative Regrets:  [";
+
+	for (int iAction = 0; iAction < numActions - 1; iAction++) {
+		os << " " << infoSet.GetCumulativeRegret(iAction) << " ,";
+	}
+	os << " " << infoSet.GetCumulativeRegret(numActions - 1) << " ]\n";
+	return os;
 }

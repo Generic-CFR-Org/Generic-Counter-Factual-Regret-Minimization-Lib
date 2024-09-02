@@ -1,23 +1,26 @@
 #include <iostream>
 #include "RockPaperScissors.h"
+#include "cfr.h"
 
 
 int main(int argc, char* argv[]) {
 
-	using GameState = RockPaperScissors::GameState;
+	using Player = RockPaperScissors::Player;
 	using ChanceNode = RockPaperScissors::ChanceNode;
 	using Action = RockPaperScissors::Action;
 	using Game = RockPaperScissors;
 
-	using CFRTree = CFRGameTree<GameState, ChanceNode, Action, Game>;
+	using CFRTree = CfrTree<Action, Player, ChanceNode, Game>;
 
 	RockPaperScissors* game = new RockPaperScissors();
+	ChanceNode root = game->chanceNode;
 
-	CFRTree* tree = new CFRTree(game, &Game::childrenFromGame, &Game::childrenFromChance, &Game::player1Action, game->chanceNode, &Game::TerminalRegret);
+	CFRTree* tree = new CFRTree(game, root);
 	
 	tree->ConstructTree();
 	std::cout << "Before CFR: \n\n";
-	tree->PrintGameTree();
+	tree->PrintTree();
+	/*tree->PrintGameTree();*/
 
 	/*tree->CFR(1000);
 

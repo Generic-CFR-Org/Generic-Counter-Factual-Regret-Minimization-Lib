@@ -21,15 +21,6 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="genericCFRGameTree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfrGameTreeUtils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfr_concepts.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nodes.h">
       <Filter>Header Files</Filter>
     </ClInclude>

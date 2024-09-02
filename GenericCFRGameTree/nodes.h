@@ -5,210 +5,374 @@
 #include <concepts>
 #include <functional>
 #include <string>
-#include "cfr_concepts.h"
-
-namespace Cfr {
-
-	namespace TreeNodes {
-
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-		concept Hashable = requires( Action a, PlayerNode p, ChanceNode c ) {
-			/*All Game classes must have ToHash() func that returns a string.*/
-			{ a.ToHash() } -> std::convertible_to<std::string>;
-			{ p.ToHash() } -> std::convertible_to<std::string>;
-			{ c.ToHash() } -> std::convertible_to<std::string>;
-
-			//PlayerNode must have ToInfoSetHash() func that returns a string for the player view.
-			{ p.ToInfoSetHash() } -> std::convertible_to<std::string>;
-		};
-
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-		concept PlayerNodeFuncs = requires( Action a, PlayerNode p, ChanceNode c ) {
+#include "cfr_tree_nodes.h"
 
 
-			/*PlayerNode must have function IsPlayerOne() that returns a bool for the currently
-				acting player*/
-			{ p.IsPlayerOne() } -> std::convertible_to<std::vector<bool>>;
-		};
+namespace CfrConcepts {
+	
+	template<typename Action, typename PlayerNode, typename ChanceNode>
+	concept Hashable = requires( Action a, PlayerNode p, ChanceNode c ) {
+		/*All Game classes must have ToHash() func that returns a string.*/
+		{ a.ToHash() } -> std::convertible_to<std::string>;
+		{ p.ToHash() } -> std::convertible_to<std::string>;
+		{ c.ToHash() } -> std::convertible_to<std::string>;
 
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-		class TreeNode {
+		//PlayerNode must have ToInfoSetHash() func that returns a string for the player view.
+		{ p.ToInfoSetHash() } -> std::convertible_to<std::string>;
+	};
 
-		protected:
-			Action mAction;
-			PlayerNode mPlayerNode;
+	template<typename PlayerNode>
+	concept PlayerNodePlayerOneFunc = requires( PlayerNode p ) {
 
-			ChanceNode mChanceNode;
-			float mProbability;
+		/*PlayerNode must have function IsPlayerOne() that returns a bool for the currently
+			acting player*/
+		{ p.IsPlayerOne() } -> std::convertible_to<bool>;
 
-			bool mIsPlayerNode;
-			bool mIsChanceNode;
-			bool mIsTerminalNode;
-
-		public:
-
-			TreeNode() :
-				mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
-				mIsPlayerNode{ false }, mIsChanceNode{ false }, mIsTerminalNode{ true } {}
-
-			TreeNode(PlayerNode p) :
-				mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
-				mIsPlayerNode{ true }, mIsChanceNode{ false }, mIsTerminalNode{ false } {}
-
-			TreeNode(ChanceNode c) :
-				mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
-				mIsPlayerNode{ false }, mIsChanceNode{ true }, mIsTerminalNode{ false } {}
-
-			TreeNode(Action a) :
-				mAction{ a }, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
-				mIsPlayerNode{ false }, mIsChanceNode{ false }, mIsTerminalNode{ true } {}
-
-			TreeNode(PlayerNode p, Action a) :
-				mAction{ a }, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
-				mIsPlayerNode{ true }, mIsChanceNode{ false }, mIsTerminalNode{ false } {}
-
-			TreeNode(ChanceNode c, Action a) :
-				mAction{ a }, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
-				mIsPlayerNode{ false }, mIsChanceNode{ true }, mIsTerminalNode{ false } {}
-
-			TreeNode(PlayerNode p, float prob) :
-				mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ prob },
-				mIsPlayerNode{ true }, mIsChanceNode{ false }, mIsTerminalNode{ false } {}
-
-			TreeNode(ChanceNode c, float prob) :
-				mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ prob },
-				mIsPlayerNode{ false }, mIsChanceNode{ true }, mIsTerminalNode{ false } {}
-
-			TreeNode(float prob) :
-				mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ prob },
-				mIsPlayerNode{ false }, mIsChanceNode{ false }, mIsTerminalNode{ true } {}
-
-			bool IsPlayerNode() { return mIsPlayerNode; }
-			bool IsChanceNode() { return mIsChanceNode; }
-			bool IsTerminalNode() { return mIsTerminalNode; }
-
-			Action GetAction() { return mAction; }
-			PlayerNode GetPlayerNode() { return mPlayerNode; }
-			ChanceNode GetChanceNode() { return mChanceNode; }
-			float GetProbability() { return mProbability; }
-
-		};
-
-		/**
-			* @brief Templated class for child node of a player node.
-			* @tparam Action - Action taken by the parent player Node.
-			* @tparam PlayerNode - The child player node.
-			* @tparam ChanceNode - The child chance node.
-			*/
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-		class PlayerNodeChild : protected TreeNode<Action, PlayerNode, ChanceNode> {
-
-		public:
-
-			PlayerNodeChild(PlayerNode p, Action a) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ p, a } {}
-
-			PlayerNodeChild(ChanceNode c, Action a) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ c, a } {}
-
-			PlayerNodeChild(Action a) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ a } {}
-
-			decltype( Action ) ActionToChild() {
-				return TreeNode<Action, PlayerNode, ChanceNode>::GetAction();
-			}
-
-			decltype( PlayerNode ) ChildPlayerNode() {
-				return TreeNode<Action, PlayerNode, ChanceNode>::GetPlayerNode();
-			}
-
-			decltype( ChanceNode ) ChildChanceNode() {
-				return TreeNode<Action, PlayerNode, ChanceNode>::GetChanceNode();
-			}
-
-		};
-
-		/**
-			* @brief Templated class for child node of a chance node node.
-			* @tparam Action - Probability from parent chance node to the child node.
-			* @tparam PlayerNode - The child player node.
-			* @tparam ChanceNode - The child chance node.
-			*/
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-		class ChanceNodeChild : protected TreeNode<Action, PlayerNode, ChanceNode> {
-
-		public:
-
-			ChanceNodeChild(PlayerNode p, float prob) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ p, prob } {}
-
-			ChanceNodeChild(ChanceNode c, float prob) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ c , prob } {}
-
-			ChanceNodeChild(float prob) :
-				TreeNode<Action, PlayerNode, ChanceNode>{ prob } {}
-
-			float ProbabilityToChild() { return TreeNode<Action, PlayerNode, ChanceNode>::GetProbability(); }
-			decltype( PlayerNode ) ChildPlayerNode() { return TreeNode<Action, PlayerNode, ChanceNode>::GetPlayerNode(); }
-			decltype( ChanceNode ) ChildChanceNode() { return TreeNode<Action, PlayerNode, ChanceNode>::GetChanceNode(); }
-
-		};
-
-
-		template<typename Action, typename PlayerNode, typename ChanceNode>
-			requires Hashable<Action, PlayerNode, ChanceNode>&&
-		PlayerNodeFuncs<Action, PlayerNode, ChanceNode>
-			class HistoryNode : protected TreeNode<Action, PlayerNode, ChanceNode> {
-			HistoryNode* mParent;
-
-
-			public:
-				HistoryNode(PlayerNode p, Action a, HistoryNode* parent) :
-					TreeNode<Action, PlayerNode, ChanceNode>{ p, a },
-					mParent{ parent } {}
-
-				HistoryNode(ChanceNode c, HistoryNode* parent) :
-					TreeNode<Action, PlayerNode, ChanceNode>{ c },
-					mParent{ parent } {}
-
-				HistoryNode(HistoryNode* parent) :
-					TreeNode<Action, PlayerNode, ChanceNode>{},
-					mParent{ parent } {}
-
-				decltype( PlayerNode ) HistoryPlayerNode() { return TreeNode<Action, PlayerNode, ChanceNode>::GetPlayerNode(); }
-				decltype( Action ) PlayerNodeAction() { return TreeNode<Action, PlayerNode, ChanceNode>::GetAction(); }
-				decltype( ChanceNode ) HistoryChanceNode() { return TreeNode<Action, PlayerNode, ChanceNode>::GetChanceNode(); }
-
-				std::string HistoryHash() {
-					if (!this->IsPlayerNode()) {
-						return "";
-					}
-					bool isPlayerOne = this->HistoryPlayerNode().IsPlayerOne();
-					return HistoryHashRecursive(isPlayerOne);
-				}
-
-				std::string HistoryHashRecursive(bool isPlayerOne) {
-					if (mParent == nullptr) {
-						return "";
-					}
-					else if (this->IsChanceNode()) {
-						return HistoryChanceNode().ToHash() + mParent->HistoryHash();
-					}
-					else {
-						if (this->HistoryPlayerNode().IsPlayerOne() == isPlayerOne) {
-							std::string currentHash = HistoryPlayerNode().ToInfoSetHash();
-							currentHash += PlayerNodeAction().ToHash();
-							return currentHash + mParent->HistoryHashRecursive(isPlayerOne);
-						}
-						else {
-							return PlayerNodeAction().ToHash() + mParent->HistoryHashRecursive(isPlayerOne);
-						}
-					}
-				}
-		};
-	}
+	};
 }
 
+template<typename Action, typename PlayerNode, typename ChanceNode>
+class ClientNode {
+public:
+	Action mAction;
+	PlayerNode mPlayerNode;
+	ChanceNode mChanceNode;
+
+	float mProbability;
+
+	bool mIsPlayerNode;
+	bool mIsChanceNode;
+	bool mIsTerminalNode;
+
+	ClientNode(PlayerNode p) :
+		mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
+		mIsPlayerNode{ true }, mIsChanceNode{ false },
+		mIsTerminalNode{ false } {}
+
+	ClientNode(ChanceNode c) :
+		mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
+		mIsPlayerNode{ false }, mIsChanceNode{ true },
+		mIsTerminalNode{ false } {}
+
+	ClientNode() :
+		mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
+		mIsPlayerNode{ false }, mIsChanceNode{ false },
+		mIsTerminalNode{ true } {}
+
+	ClientNode(PlayerNode p, float prob) :
+		ClientNode{ p } { mProbability = prob; }
+
+	ClientNode(ChanceNode c, float prob) :
+		ClientNode{ c } {mProbability = prob; }
+
+	ClientNode(float prob) :
+		ClientNode{} {mProbability = prob; } 
+
+	ClientNode(PlayerNode p, Action a) :
+		ClientNode{ p } { mAction = a; }
+
+	ClientNode(ChanceNode c, Action a) :
+		ClientNode{ c } { mAction = a;}
+
+	ClientNode(Action a) :
+		ClientNode{} {
+		mAction = a;
+	}
+
+	bool IsPlayerNode() { return mIsPlayerNode; }
+	bool IsChanceNode() { return mIsChanceNode; }
+	bool IsTerminalNode() { return mIsTerminalNode; }
+
+	Action GetAction() { return mAction; }
+	PlayerNode GetPlayerNode() { return mPlayerNode; }
+	ChanceNode GetChanceNode() { return mChanceNode; }
+	float GetProbability() { return mProbability; }
+};
+
+
+template<typename Action, typename PlayerNode, typename ChanceNode>
+requires CfrConcepts::Hashable<Action, PlayerNode, ChanceNode>&&
+		 CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>
+class TreeNode {
+
+	using byte = TreeUtils::byte;
+	using TreeNodeList = std::vector<TreeNode>;
+protected:
+	Action mAction;
+	PlayerNode mPlayerNode;
+	ChanceNode mChanceNode;
+
+	float mProbability;
+
+	bool mIsPlayerNode;
+	bool mIsChanceNode;
+	bool mIsTerminalNode;
+	TreeNode* mpParent;
+	byte* mpChildStartPos;
+	bool mIsChildStartSet;
+
+public:
+
+	TreeNode(const TreeNode<Action, PlayerNode, ChanceNode>& other) {
+		mAction = other.mAction;
+		mPlayerNode = other.mPlayerNode;
+		mChanceNode = other.mChanceNode;
+		mProbability = other.mProbability;
+		mIsPlayerNode = other.mIsPlayerNode;
+		mIsChanceNode = other.mIsChanceNode;
+		mIsTerminalNode = other.mIsTerminalNode;
+		mpParent = other.mpParent;
+		mpChildStartPos = nullptr;
+		mIsChildStartSet = false;
+	}
+
+	TreeNode (
+		const TreeNode<Action, PlayerNode, ChanceNode>& other,
+		TreeNode<Action, PlayerNode, ChanceNode>* parent
+	) {
+		mAction = other.mAction;
+		mPlayerNode = other.mPlayerNode;
+		mChanceNode = other.mChanceNode;
+		mProbability = other.mProbability;
+		mIsPlayerNode = other.mIsPlayerNode;
+		mIsChanceNode = other.mIsChanceNode;
+		mIsTerminalNode = other.mIsTerminalNode;
+		mpParent = parent;
+		mpChildStartPos = nullptr;
+		mIsChildStartSet = false;
+	}
+
+	TreeNode(
+		const ClientNode<Action, PlayerNode, ChanceNode>& other
+	) {
+		mAction = other.mAction;
+		mPlayerNode = other.mPlayerNode;
+		mChanceNode = other.mChanceNode;
+		mProbability = other.mProbability;
+		mIsPlayerNode = other.mIsPlayerNode;
+		mIsChanceNode = other.mIsChanceNode;
+		mIsTerminalNode = other.mIsTerminalNode;
+		mpParent = nullptr;
+		mpChildStartPos = nullptr;
+		mIsChildStartSet = false;
+	}
+
+	TreeNode(
+		const ClientNode<Action, PlayerNode, ChanceNode>& other,
+		TreeNode<Action, PlayerNode, ChanceNode>* parent
+	) {
+		mAction = other.mAction;
+		mPlayerNode = other.mPlayerNode;
+		mChanceNode = other.mChanceNode;
+		mProbability = other.mProbability;
+		mIsPlayerNode = other.mIsPlayerNode;
+		mIsChanceNode = other.mIsChanceNode;
+		mIsTerminalNode = other.mIsTerminalNode;
+		mpParent = parent;
+		mpChildStartPos = nullptr;
+		mIsChildStartSet = false;
+	}
+
+
+
+	/**
+		* @brief Base constructors for each node type. 
+		*/
+	TreeNode(PlayerNode p) :
+		mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
+		mIsPlayerNode{ true }, mIsChanceNode{ false },
+		mIsTerminalNode{ false }, mpParent{ nullptr },
+		mpChildStartPos{ nullptr }, mIsChildStartSet{ false } {}
+
+	TreeNode(ChanceNode c) :
+		mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
+		mIsPlayerNode{ false }, mIsChanceNode{ true },
+		mIsTerminalNode{ false }, mpParent{ nullptr },
+		mpChildStartPos{nullptr}, mIsChildStartSet{ false } {}
+
+	TreeNode() :
+		mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
+		mIsPlayerNode{ false }, mIsChanceNode{ false },
+		mIsTerminalNode{ true }, mpParent{ nullptr },
+		mpChildStartPos{nullptr}, mIsChildStartSet{ false } {}
+
+	/**
+		* @brief Constructors that give node a parent tree node.
+		* @param parent Pointer to parent Tree Node.
+		*/
+	TreeNode(PlayerNode p, TreeNode* parent) : 
+		TreeNode{ p }, mpParent{ parent } {}
+
+	TreeNode(ChanceNode c, TreeNode* parent) :
+		TreeNode{ c }, mpParent{ parent } {}
+
+	TreeNode(TreeNode* parent) :
+		TreeNode{}, mpParent{ parent } {}
+
+
+	/**
+		* @brief Constructors that set action taken to get to the node.
+		* @param a Action taken by parent node.
+		*/
+	TreeNode(PlayerNode p, Action a) :
+		TreeNode{ p }, mAction{ a } {}
+
+	TreeNode(ChanceNode c, Action a) :
+		TreeNode{ c }, mAction{ a } {}
+
+	TreeNode(Action a) : TreeNode{}, mAction{ a } {}
+
+	/**
+		* @brief Constructors that set probability to get to the node.
+		* @param prob Probability of reach node.
+		*/
+	TreeNode(PlayerNode p, float prob) :
+		TreeNode{ p }, mProbability{ prob } {}
+
+	TreeNode(ChanceNode c, float prob) :
+		TreeNode{ c }, mProbability{ prob } {}
+
+	TreeNode(float prob) :
+		TreeNode{}, mProbability{ prob } {}
+
+
+	bool IsPlayerNode() { return mIsPlayerNode; }
+	bool IsChanceNode() { return mIsChanceNode; }
+	bool IsTerminalNode() { return mIsTerminalNode; }
+	bool IsChildOffsetSet() { return mIsChildStartSet; }
+
+	Action GetAction() { return mAction; }
+	PlayerNode GetPlayerNode() { return mPlayerNode; }
+	ChanceNode GetChanceNode() { return mChanceNode; }
+	float GetProbability() { return mProbability; }
+	byte* GetChildOffset() { return mpChildStartPos; }
+
+	std::string HistoryHash() {
+		if (!this->IsPlayerNode()) {
+			return "";
+		}
+		bool isPlayerOne = this->GetPlayerNode().IsPlayerOne();
+		return HistoryHashRecursive(isPlayerOne);
+	}
+
+	TreeNodeList HistoryList() {
+		TreeNodeList historyList;
+		HistoryListRecursive(historyList, nullptr);
+		return historyList;
+	}
+
+	void UpdateParentOffset(byte* childOffset) {
+		if (this->mpParent == nullptr) {
+			return;
+		}
+		if (this->mpParent->IsChildOffsetSet()) {
+			return;
+		}
+		this->mpParent->mpChildStartPos = childOffset;
+		this->mpParent->mIsChildStartSet = true;
+	}
+
+
+private:
+
+	std::string HistoryHashRecursive(bool isPlayerOne) {
+		if (mpParent == nullptr) {
+			return "";
+		} else if (this->IsChanceNode()) {
+			return this->GetChanceNode().ToHash() + mpParent->HistoryHash();
+		} else if (this->GetPlayerNode().IsPlayerOne() == isPlayerOne) {
+			std::string currentHash = this->GetPlayerNode().ToInfoSetHash();
+			currentHash += this->GetAction().ToHash();
+			return currentHash + mpParent->HistoryHashRecursive(isPlayerOne);
+		} else {
+			return this->GetAction().ToHash() + mpParent->HistoryHashRecursive(isPlayerOne);
+		}	
+	}
+
+	void HistoryListRecursive(TreeNodeList& historyList, TreeNode* lastChild) {
+		if (this == nullptr) {
+			return;
+		}
+		else if (this->mpParent == nullptr) {
+			historyList.push_back(*this);
+		}
+		else {
+			this->mpParent->HistoryListRecursive(historyList, this);
+			TreeNode toAdd(*this);
+			if (lastChild != nullptr) {
+				toAdd.mAction = lastChild->GetAction();
+			}
+			else {
+				toAdd.mAction = Action();
+			}
+			historyList.push_back(toAdd);
+		}
+	}
+};
+
+template<typename Action, typename PlayerNode, typename ChanceNode>
+static std::vector<float> ToFloatList
+(
+	std::vector<ClientNode<Action, PlayerNode, ChanceNode>>& nodeList
+) {
+	std::vector<float> floatList;
+	for (ClientNode<Action, PlayerNode, ChanceNode> node : nodeList) {
+		floatList.push_back(node.GetProbability());
+	}
+	return floatList;
+}
+
+//template<typename Action, typename PlayerNode, typename ChanceNode>
+//class HistoryList {
+//public:
+//	std::vector<TreeNode<Action, PlayerNode, ChanceNode>*> mList;
+//
+//	HistoryList() {}
+//	void push_back(TreeNode<Action, PlayerNode, ChanceNode>* node) {
+//		mList.push_back(node);
+//	}
+//	typename std::vector<TreeNode<Action, PlayerNode, ChanceNode>*>::iterator begin() { return mList.begin(); }
+//	typename std::vector<TreeNode<Action, PlayerNode, ChanceNode>*>::iterator end() { return mList.end(); }
+//	int size() { return mList.size(); }
+//};
+
+namespace CfrConcepts {
+
+	
+
+
+	template<typename Action, typename PlayerNode, typename ChanceNode>
+	concept PlayerNodeChildFunc = requires( Action a, PlayerNode p ) {
+
+		/*Player Node must have function that returns child node of an action.*/
+		{ p.Child(a) } -> std::convertible_to<ClientNode<Action, PlayerNode, ChanceNode>>;
+
+	};
+
+	template<typename Action, typename PlayerNode>
+	concept PlayerNodeActionListFunc = requires ( PlayerNode p ) {
+		/*Player node must have function that returns a list of actions it can take*/
+		{ p.ActionList() } -> std::convertible_to<std::vector<Action>>;
+	};
+
+
+
+	template<typename Action, typename PlayerNode, typename ChanceNode>
+	concept ChanceNodeChildrenFunc = requires( Action a, PlayerNode p, ChanceNode c ) {
+
+		/*Chance Node must have function that returns vector of child nodes*/
+		{ c.Children() } -> std::convertible_to<std::vector<ClientNode<Action, PlayerNode, ChanceNode>>>;
+
+	};
+
+	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+	concept NeedsUtilityFunc = requires( Action a, PlayerNode p, ChanceNode c, GameClass g ) {
+		
+		{ g.UtilityFunc(std::vector<TreeNode<Action, PlayerNode, ChanceNode>>()) } ->
+			std::convertible_to<float>;
+	};
+
+}
 
 
 

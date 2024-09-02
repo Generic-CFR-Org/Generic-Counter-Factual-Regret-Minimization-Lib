@@ -4,31 +4,58 @@
 #include <utility>
 #include <tuple>
 #include "cfr.h"
+#include "nodes.h"
 
 
 
 class RockPaperScissors {
 public:
 
+	class Action;
+	class Player;
+	class ChanceNode;
+
+	using Node = ClientNode<Action, Player, ChanceNode>;
+
 	class Action {
 	public:
 		char action;
 		Action() { action = 'n'; }
 		inline Action(char in_action) { action = in_action; }
-		Action(const Action& other) {action = other.action; }
-		/*bool operator==(const Action& rhs) const noexcept {
-			return this->action == rhs.action;
-		}*/
+		/*Action(const Action& other) {action = other.action; }*/
+		std::string ToHash() { return std::string(1, ' '); }
 	};	
 
-	class GameState {
+	class Player {
 	public:
 		bool player_with_action;
 
-		GameState() { player_with_action = true; }
-		GameState(bool p) { player_with_action = p; }
-		GameState(const GameState& other) {player_with_action = other.player_with_action; }
-		
+		Player() { player_with_action = true; }
+		Player(bool p) { player_with_action = p; }
+		Player(const Player& other) {player_with_action = other.player_with_action; }
+		bool IsPlayerOne() { return player_with_action; }
+		std::string ToHash() { return std::string(1, player_with_action); }
+		std::string ToInfoSetHash() { return std::string(1, player_with_action); }
+		Node Child(Action a) {
+			if (player_with_action) {
+				Node childNode{Player{false}, a};
+				return childNode;
+			}
+			else {
+				Node terminalNode{a};
+				return terminalNode;
+			}
+		}
+		std::vector<Action> ActionList() {
+			Action rock{'r'};
+			Action paper{'p'};
+			Action scissors{'s'};
+			std::vector<Action> allActions;
+			allActions.push_back(rock);
+			allActions.push_back(paper);
+			allActions.push_back(scissors);
+			return allActions;
+		}
 	};
 
 	typedef std::vector<Action*> ActionList;
@@ -46,26 +73,34 @@ public:
 		ChanceNode(const ChanceNode& other) {
 			prob = other.prob;
 		}
+		std::string ToHash() { return std::string(1, ' '); }
+		std::vector<Node> Children() {
+			std::vector<Node> startList;
+			Player playerOne{true};
+			Node playerNode{playerOne, 1.0};
+			startList.push_back(playerNode);
+			return startList;
+		}
 	};
 
+	using HistoryNode = TreeNode<Action, Player, ChanceNode>;
 
-	//Add static functions that determine whether a GameNode / ChanceNode is null. 
-	static float TerminalRegret(History history, RockPaperScissors* gameInfo) {
-		
+	float UtilityFunc(std::vector<HistoryNode> history) {
+
 		auto iHistory = history.begin();
 		auto iEnd = history.end();
-		char player1;
-		char player2;
+		char player1 = 'a';
+		char player2 = 'a';
 		for (iHistory; iHistory < iEnd; iHistory++) {
-			GameHistoryNode historyNode = *iHistory;
-			if (historyNode.IsGameNode()) {
-				GameState gameState = historyNode.GetGameState();
-				Action* action = historyNode.GetAction();
-				if (player1Action(gameState, gameInfo)) {
-					player1 = action->action;
+			HistoryNode historyNode = *iHistory;
+			if (historyNode.IsPlayerNode()) {
+				Player playerNode = historyNode.GetPlayerNode();
+				Action action = historyNode.GetAction();
+				if (playerNode.IsPlayerOne()) {
+					player1 = action.action;
 				}
 				else {
-					player2 = action->action;
+					player2 = action.action;
 				}
 			}
 		}
@@ -91,47 +126,8 @@ public:
 		return 0.0;
 	}
 
-
 	ChanceNode chanceNode{};
-	Action *rock = new Action('r');;
-	Action *paper = new Action('p');
-	Action *scissors = new Action('s');
-	ActionList strategy_profile{ rock, paper, scissors };
-	CFRGameTree<RockPaperScissors::GameState, RockPaperScissors::ChanceNode, RockPaperScissors::Action, RockPaperScissors>* tree;
 
 	RockPaperScissors() {}
-
-	static bool player1Action(GameState game_state, RockPaperScissors* info) {
-		return game_state.player_with_action;
-	}
-
-	static GameNodeChildren* childrenFromGame(GameState gameState, ActionList strategy, RockPaperScissors* info) {
-		
-		GameNodeChildren *pChildren = new GameNodeChildren();
-		
-		
-		if (gameState.player_with_action) {
-			GameState new_state{ false };
-		
-			pChildren->AddChildGameNode(new_state, strategy, strategy);
-			return pChildren;
-
-		}
-		else {
-			//Terminal node
-			pChildren->AddChildTerminalNode(strategy);
-			return pChildren;
-		}	
-	}
-
-	static ChanceNodeChildren* childrenFromChance(ChanceNode chance_node, RockPaperScissors* info) {
-		ChanceNodeChildren* pChildren = new ChanceNodeChildren();
-		GameState start_state{ true };
-		ActionList strat = info->strategy_profile;
-		float prob = 1.0;
-		pChildren->AddChildGameNode(start_state, strat, prob);
-
-		return pChildren;
-	}
 
 };

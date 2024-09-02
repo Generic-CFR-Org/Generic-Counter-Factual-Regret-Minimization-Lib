@@ -17,5 +17,6 @@
 #include <stdexcept>
 #include <concepts>
 #include <functional>
+#include "cfr_tree_nodes.h"
 
 #endif //PCH_H
