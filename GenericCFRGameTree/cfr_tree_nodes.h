@@ -60,6 +60,9 @@ public:
 };
 
 
+/**
+ * @brief Object used to cast bytes in the search tree array for use by CFR algorithm.
+ */
 class SearchTreeNode {
 
 protected:
@@ -89,6 +92,7 @@ protected:
 
 public:
 
+
 	SearchTreeNode(byte* pos);
 
 	SearchTreeNode(byte* pTree, long offset) : SearchTreeNode(pTree + offset) {}
@@ -112,6 +116,20 @@ public:
 		}
 		return probs;
 	}
+	std::vector<float> CumulativeChildProbs() {
+		std::vector<float> probs;
+		float runningCnt = 0;
+		float* temp = mpChildProbs;
+		if (this->IsChanceNode()) {
+			for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
+				probs.push_back(runningCnt);
+				runningCnt += *temp;
+				temp++;
+			}
+			probs.push_back(runningCnt);
+		}
+		return probs;
+	}
 	float Utility() {
 		if (this->IsTerminalNode()) {
 			return mUtility;
@@ -130,6 +148,9 @@ public:
 std::ostream& operator<<(std::ostream& os, SearchTreeNode& searchNode);
 		
 
+/**
+ * @brief Object used to cast bytes in Regret Table for use by CFR algorithm
+ */
 class InfoSetData {
 
 	uint8_t mNumActions;
