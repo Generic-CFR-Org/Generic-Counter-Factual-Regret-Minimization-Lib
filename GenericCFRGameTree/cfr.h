@@ -6,6 +6,7 @@
 #include <functional>
 #include <utility>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <iostream>
 #include <random>
@@ -69,6 +70,10 @@ public:
 	void BaseCFR(int iterations);
 
 	void ChanceSamplingCFR(int iterations);
+
+	void BaseCFRwithAccuracy(float accuracy);
+
+	void ChanceSamplingCFRwithAccuracy(float accuracy);
 
 private:
 
@@ -156,6 +161,8 @@ private:
 	int SampleChanceNodeIndex(SearchTreeNode& chanceNode);
 
 	void NewStrategy(InfoSetData& infoSet);
+
+	void AverageStrategy(SearchTreeNode& node, std::unordered_set<byte*> alreadyEvaluated);
 };
 			 
 /*
@@ -204,6 +211,60 @@ ChanceSamplingCFR(int iterations) {
 		ChanceSamplingCfrRecursive(rootChance, true, iCfr, 1, 1);
 		ChanceSamplingCfrRecursive(rootChance, false, iCfr, 1, 1);
 	}
+	std::unordered_set<byte*> seenInfoSets;
+	AverageStrategy(rootChance, seenInfoSets);
+}
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
+inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+BaseCFRwithAccuracy(float accuracy) {
+
+	SearchTreeNode rootChance = SearchTreeNode(mpGameTree);
+	int itersPetExploitabilityCheck = 10;
+	float exploitability = 100.0;
+	int i = 0;
+	while (exploitability > accuracy) {
+		for (int iCfr = 0; iCfr < itersPetExploitabilityCheck - 1; iCfr++) {
+
+			BaseCfrRecursive(rootChance, true, i, 1, 1);
+			BaseCfrRecursive(rootChance, false, i, 1, 1);
+			i++;
+		}
+		//One last iteration to calculate exploitability
+		float playerOneEv = BaseCfrRecursive(rootChance, true, i, 1, 1);
+		float playerTwoEv = BaseCfrRecursive(rootChance, false, i, 1, 1);
+		exploitability = playerOneEv + playerTwoEv;
+		i++;
+	}
+}
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
+inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+ChanceSamplingCFRwithAccuracy(float accuracy) {
+
+	SearchTreeNode rootChance = SearchTreeNode(mpGameTree);
+	int itersPetExploitabilityCheck = 10;
+	float exploitability = 100.0;
+	int i = 0;
+	while (exploitability > accuracy) {
+		for (int iCfr = 0; iCfr < itersPetExploitabilityCheck - 1; iCfr++) {
+
+			ChanceSamplingCfrRecursive(rootChance, true, i, 1, 1);
+			ChanceSamplingCfrRecursive(rootChance, false, i, 1, 1);
+			i++;
+		}
+		//One last iteration to calculate exploitability
+		float playerOneEv = BaseCfrRecursive(rootChance, true, i, 1, 1);
+		float playerTwoEv = BaseCfrRecursive(rootChance, false, i, 1, 1);
+
+		exploitability = playerOneEv + playerTwoEv;
+
+		i++;
+	}
+	std::unordered_set<byte*> seenInfoSets;
+	AverageStrategy(rootChance, seenInfoSets);
 }
 
 /*
@@ -616,6 +677,48 @@ NewStrategy(InfoSetData& infoSet) {
 		}
 		else {
 			infoSet.SetCurrentStrategy(uniformProb, iAction);
+		}
+	}
+}
+
+template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
+	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
+inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+AverageStrategy(SearchTreeNode& node, std::unordered_set<byte*> alreadyEvaluated) {
+	if (node.IsTerminalNode()) {
+		return;
+	}
+	else if (node.IsChanceNode()) {
+
+		std::vector<SearchTreeNode> children = node.AllChildren();
+		for (int iChild = 0; iChild < children.size(); iChild++) {
+			AverageStrategy(children.at(iChild), alreadyEvaluated);
+		}
+
+	}
+	else {
+		std::vector<SearchTreeNode> children = node.AllChildren();
+		byte* infoSetPtr = node.InfoSetPosition();
+		if (!alreadyEvaluated.contains(infoSetPtr)) {
+			InfoSetData infoSet = node.InfoSetPosition();
+			float normalizingSum = 0;
+			for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
+				normalizingSum += infoSet.GetCumulativeStrategy(iAction);
+			}
+			for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
+				if (normalizingSum > 0) {
+					float currStratSum = infoSet.GetCumulativeStrategy(iAction);
+					infoSet.SetCurrentStrategy(currStratSum / normalizingSum, iAction);
+				}
+				else {
+					infoSet.SetCurrentStrategy(1.0 / infoSet.numActions(), iAction);
+				}
+			}
+			alreadyEvaluated.insert(infoSetPtr);
+		}
+	
+		for (int iChild = 0; iChild < children.size(); iChild++) {
+			AverageStrategy(children.at(iChild), alreadyEvaluated);
 		}
 	}
 }

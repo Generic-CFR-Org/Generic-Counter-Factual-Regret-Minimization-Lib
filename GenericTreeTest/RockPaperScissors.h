@@ -118,7 +118,7 @@ public:
 			return -1.0;
 		}
 		if (player1 == 's' && player2 == 'p') {
-			return 1.0;
+			return 2.0;
 		}
 		if (player1 == 's' && player2 == 'r') {
 			return -1.0;

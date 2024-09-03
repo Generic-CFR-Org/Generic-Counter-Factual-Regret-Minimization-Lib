@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 	std::cout << tree->TreeSize() << "\n";
 	std::cout << tree->SearchTreeSize() << "\n";
 	std::cout << tree->InfoSetTableSize() << "\n";
-	tree->ChanceSamplingCFR(50);
+	tree->ChanceSamplingCFRwithAccuracy(0.5);
 	std::cout << "After CFR: \n\n";
 	tree->PrintTree();
 	/*tree->PrintGameTree();*/
