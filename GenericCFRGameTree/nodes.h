@@ -5,7 +5,7 @@
 #include <concepts>
 #include <functional>
 #include <string>
-#include "cfr_tree_nodes.h"
+#include "cfr.h"
 
 
 namespace CfrConcepts {
@@ -95,7 +95,7 @@ requires CfrConcepts::Hashable<Action, PlayerNode, ChanceNode>&&
 		 CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>
 class TreeNode {
 
-	using byte = TreeUtils::byte;
+	using byte = unsigned char;
 	using TreeNodeList = std::vector<TreeNode>;
 protected:
 	Action mAction;

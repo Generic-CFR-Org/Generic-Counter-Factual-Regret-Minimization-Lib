@@ -65,7 +65,7 @@ class SearchTreeNode {
 protected:
 	char mIdentifier;
 
-	using byte = TreeUtils::byte;
+	using byte = unsigned char;
 
 	//Used to traverse to children for player and chance nodes.
 	uint8_t mNumChildren = 0;

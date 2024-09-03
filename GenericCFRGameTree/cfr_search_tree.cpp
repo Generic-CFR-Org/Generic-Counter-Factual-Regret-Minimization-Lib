@@ -44,7 +44,7 @@ TreeUtils::byte* TreeUtils::SetTerminalNode(byte* treePos, float utility) {
 	return temp;
 }
 
-using byte = TreeUtils::byte;
+using byte = unsigned char;
 
 SearchTreeNode::SearchTreeNode(byte* pos) {
 

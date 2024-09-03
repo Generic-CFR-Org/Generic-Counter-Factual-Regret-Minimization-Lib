@@ -23,7 +23,7 @@ TreeUtils::byte* TreeUtils::SetInfoSetNode(byte* pos, int numActions) {
 	return pos;
 }
 
-using byte = TreeUtils::byte;
+using byte = unsigned char;
 
 InfoSetData::InfoSetData(byte* pos) {
 	mNumActions = ( uint8_t ) * ( pos++ );

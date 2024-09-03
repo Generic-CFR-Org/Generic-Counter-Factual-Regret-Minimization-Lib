@@ -11,7 +11,7 @@
 #include "nodes.h"
 #include "cfr_tree_nodes.h"
 
-using byte = TreeUtils::byte;
+using byte = unsigned char;
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 requires CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode> &&

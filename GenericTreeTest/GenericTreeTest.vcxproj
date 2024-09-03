@@ -73,6 +73,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\Users\Amir\Documents\Personal\Personal Projects\PokerSolver\PokerSolver;C:\Users\Amir\Documents\Personal\Personal Projects\Texas Holdem Showdown Evaluator\Texas Holdem Showdown Evaluator;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\Amir\Documents\Personal\Personal Projects\GenericCFRGameTree\GenericCFRGameTree;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -123,6 +126,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,9 +139,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Texas Holdem Showdown Evaluator\Texas Holdem Showdown Evaluator\Texas Holdem Showdown Evaluator.vcxproj">
-      <Project>{414beada-cb4f-4455-b30b-0731a040a071}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\GenericCFRGameTree\GenericCFRGameTree.vcxproj">
       <Project>{f03438a2-27d8-44cc-9771-a3b22eeeb40f}</Project>
     </ProjectReference>
