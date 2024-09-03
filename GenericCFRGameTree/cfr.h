@@ -7,6 +7,7 @@
 #include <utility>
 #include <unordered_map>
 #include <string>
+#include <iostream>
 #include "nodes.h"
 #include "cfr_tree_nodes.h"
 
