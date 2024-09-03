@@ -15,6 +15,9 @@
 
 using byte = unsigned char;
 
+/**
+ * @brief Requirements for client to use the generic cfr tree.
+ */
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 concept GenericCfrRequirements = requires( Action a, PlayerNode p, ChanceNode c, GameClass g ) {
 	CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
@@ -29,11 +32,29 @@ template<typename Action, typename PlayerNode, typename ChanceNode, typename Gam
 requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
 class CfrTree {
 
+	/**
+	 * @brief Stores pointer to the search tree constructed by the class.
+	 */
 	byte* mpGameTree;
+
+	/**
+	 * @brief Stores pointer to the regret table constructed by the class.
+	 */
 	byte* mpRegretTable;
+
+	/**
+	 * @brief Stores pointer to the static game metadata provided by the client.
+	 */
 	GameClass* mpStaticGameInfo;
+
+	/**
+	 * @brief Stores Chance Node object representing the root node of the game.
+	 */
 	ChanceNode mStartingChanceNode;
 
+	/**
+	 * @brief Stores the sizes of the search tree and regret table respectively.
+	 */
 	long mSearchTreeSize;
 	long mInfoSetTableSize;
 
@@ -59,20 +80,55 @@ public:
 		*/
 	void ConstructTree();
 
+	/**
+	 * @return The combined size of the regret table and search tree in bytes.
+	 */
 	long TreeSize() { return mSearchTreeSize + mInfoSetTableSize; }
 
+	/**
+	 * @return The size of the search tree in bytes
+	 */
 	long SearchTreeSize() { return mSearchTreeSize; }
 
+	/**
+	 * @return The size of the Info Set (Regret) table in bytes.
+	 */
 	long InfoSetTableSize() { return mInfoSetTableSize; }
 
+	/**
+	 * @brief Prints out all nodes in the search tree and info sets in the regret table.
+	 */
 	void PrintTree();
 
+	/**
+	 * @brief Runs CFR on the search tree / regret table, exploring every node
+	 *		  in the search tree for each iteration.
+	 * @param iterations Number of iterations to update the entire tree.
+	 */
 	void BaseCFR(int iterations);
 
+	/**
+	 * @brief Runs CFR on the search tree / regret table, exploring a single subtree
+	 *		  of each chance node in the search tree for each iteration.
+	 * @param iterations Number of iterations to update the tree.
+	 */
 	void ChanceSamplingCFR(int iterations);
 
+	/**
+	 * @brief Runs CFR on the search tree / regret table, exploring every node
+	 *		  in the search tree for each iteration until desired accuracy is reached.
+	 *		  Accuracy is determined by summing the 2 players' value at the root node.
+	 * @param iterations Desired accuracy to reach..
+	 */
 	void BaseCFRwithAccuracy(float accuracy);
 
+	/**
+	 * @brief Runs CFR on the search tree / regret table, exploring a single subtree
+	 *		  of each chance node in the search tree for each iteration 
+			  until desired accuracy is reached.
+			  Accuracy is determined by summing the 2 players' value at the root node.
+	 * @param iterations Number of iterations to update the tree.
+	 */
 	void ChanceSamplingCFRwithAccuracy(float accuracy);
 
 private:
@@ -146,23 +202,50 @@ private:
 		InfoSetPositions& infoSetPosMap
 	);
 
+	/**
+	 * @brief Iterates through all nodes in the search tree and prints
+	 *		  relevant information (including info sets)
+	 * @param node 
+	 */
 	void PrintTreeRecursive(SearchTreeNode& node);
 
+	/**
+	 * @brief Recursively runs CFR on all nodes in search tree without chance sampling
+	 * @return The value of the subgame.
+	 */
 	float BaseCfrRecursive(
 		SearchTreeNode& node, bool isPlayerOne, int iteration,
 		float playerOneReachProb, float playerTwoReachProb
 	);
 
+	/**
+	 * @brief Recursively runs CFR on all nodes in search tree with chance sampling
+	 * @return The value of the subgame.
+	 */
 	float ChanceSamplingCfrRecursive(
 		SearchTreeNode& node, bool isPlayerOne, int iteration,
 		float playerOneReachProb, float playerTwoReachProb
 	);
 
+	/**
+	 * @brief Returns a random index of a chance node's child based on
+	 *	      the probability of reaching the child.
+	 * @param chanceNode 
+	 * @return Index to access child node.
+	 */
 	int SampleChanceNodeIndex(SearchTreeNode& chanceNode);
 
+	/**
+	* @brief updates current strategy for an info set during an iteration of CFR.
+	*/
 	void NewStrategy(InfoSetData& infoSet);
-
-	void AverageStrategy(SearchTreeNode& node, std::unordered_set<byte*> alreadyEvaluated);
+	
+	/**
+	* @brief updates overall strategy for an info set after all iterations of CFR.
+	*/
+	void AverageStrategy(
+		SearchTreeNode& node, std::unordered_set<byte*> alreadyEvaluated
+	);
 };
 			 
 /*

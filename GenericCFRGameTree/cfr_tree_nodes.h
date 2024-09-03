@@ -10,6 +10,9 @@
 ###########################################
 */
 
+/**
+ * @brief Util constants and functions to assist in tree preprocessing and construction.
+ */
 class TreeUtils {
 public:
 	typedef unsigned char byte;
@@ -17,6 +20,9 @@ public:
 	static const int TERMINAL_SIZE = sizeof(char) + sizeof(float);
 	static const int PLAYER_NODE_SIZE = NON_TERMINAL_BASE_SIZE + sizeof(byte*) + sizeof(char);
 	
+	/**
+	 * @brief General settors and gettors for float and byte* types.
+	 */
 	static void SetFloatAtBytePtr(unsigned char* pByte, float val) {
 		float* pFloat = reinterpret_cast<float*>( pByte );
 		*( pFloat ) = val;
@@ -37,6 +43,9 @@ public:
 		return *( pBytePtr );
 	}
 
+	/**
+	 * @return Number of bytes required to store a search tree node.
+	 */
 	static int PlayerNodeSizeInTree() { 
 		return NON_TERMINAL_BASE_SIZE + sizeof(byte*) + sizeof(bool); 
 	}
@@ -47,14 +56,26 @@ public:
 
 	static int TerminalNodeSizeInTree() { return TERMINAL_SIZE; }
 
+	
+	/**
+	 * @brief Sets each type of node in the search tree with relevant data required.
+	 * @return Address of the next node to be set.
+	 */
 	static byte* SetPlayerNode(byte* treePos, int numChildren, byte* childrenStart, bool isPlayerOne, byte* infoSetPointer);
 
 	static byte* SetChanceNode(byte* treePos, byte* childrenStart, std::vector<float>& childProbs);
 
 	static byte* SetTerminalNode(byte* treePos, float utility);
 
+	/**
+	 * @return Number of bytes required to store an info set with N actions.
+	 */
 	static int InfoSetSize(int numActions);
 
+	/**
+	 * @brief Sets an Information Set in the regret table.
+	 * @return Address of the next Information Set to be set.
+	 */
 	static byte* SetInfoSetNode(byte* pos, int numActions);
 
 };

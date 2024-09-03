@@ -8,8 +8,15 @@
 #include "cfr.h"
 
 
+/**
+ * @brief Requirements for the client to use the generic cfr class.
+ */
 namespace CfrConcepts {
-	
+
+	/*
+	- All Game classes must have ToHash() func that returns a string.
+	 - PlayerNode must have ToInfoSetHash() func that returns a string for the player view.
+	 */
 	template<typename Action, typename PlayerNode, typename ChanceNode>
 	concept Hashable = requires( Action a, PlayerNode p, ChanceNode c ) {
 		/*All Game classes must have ToHash() func that returns a string.*/
@@ -17,20 +24,29 @@ namespace CfrConcepts {
 		{ p.ToHash() } -> std::convertible_to<std::string>;
 		{ c.ToHash() } -> std::convertible_to<std::string>;
 
-		//PlayerNode must have ToInfoSetHash() func that returns a string for the player view.
 		{ p.ToInfoSetHash() } -> std::convertible_to<std::string>;
 	};
 
+	/*
+	- PlayerNode must have function IsPlayerOne() that returns a bool
+	for the currently acting player
+	*/
 	template<typename PlayerNode>
 	concept PlayerNodePlayerOneFunc = requires( PlayerNode p ) {
 
-		/*PlayerNode must have function IsPlayerOne() that returns a bool for the currently
-			acting player*/
+		
 		{ p.IsPlayerOne() } -> std::convertible_to<bool>;
 
 	};
 }
 
+/**
+ * @brief Node used by the client to store the child of a player node or chance node.
+ *	      Can store either a player node, chance node, or no node, alongside
+ *		  metadata describing the action taken to get to a node such as:
+ *			float - probability to reach a node from a parent chance node.
+ *			action - action taken to reach a node from a parent player node.
+ */
 template<typename Action, typename PlayerNode, typename ChanceNode>
 class ClientNode {
 public:
@@ -236,17 +252,30 @@ public:
 		TreeNode{}, mProbability{ prob } {}
 
 
+	/**
+	 * @brief Returns the type of node stored in the current tree node.
+	 */
 	bool IsPlayerNode() { return mIsPlayerNode; }
 	bool IsChanceNode() { return mIsChanceNode; }
 	bool IsTerminalNode() { return mIsTerminalNode; }
+
+	/**
+	 * @brief Returns whether a tree node's child has updated the parent's child pointer.
+	 */
 	bool IsChildOffsetSet() { return mIsChildStartSet; }
 
+	/**
+	 * @brief Gettors for elements stored in a tree node.
+	 */
 	Action GetAction() { return mAction; }
 	PlayerNode GetPlayerNode() { return mPlayerNode; }
 	ChanceNode GetChanceNode() { return mChanceNode; }
 	float GetProbability() { return mProbability; }
 	byte* GetChildOffset() { return mpChildStartPos; }
 
+	/**
+	 * @return Gets string representation of the history for info set evaluation.
+	 */
 	std::string HistoryHash() {
 		if (!this->IsPlayerNode()) {
 			return "";
@@ -255,12 +284,20 @@ public:
 		return HistoryHashRecursive(isPlayerOne);
 	}
 
+	/**
+	 * @brief Gets the list representation of the history up until the current node.
+	 * @return List of TreeNodes.
+	 */
 	TreeNodeList HistoryList() {
 		TreeNodeList historyList;
 		HistoryListRecursive(historyList, nullptr);
 		return historyList;
 	}
 
+	/**
+	 * @brief Updates a node's parent's child start offset for search tree navigation.
+	 * @param childOffset Address of the current node in the search tree.
+	 */
 	void UpdateParentOffset(byte* childOffset) {
 		if (this->mpParent == nullptr) {
 			return;
@@ -310,6 +347,9 @@ private:
 	}
 };
 
+/**
+ * @return List of probabilities generated for the children of a chance node.
+ */
 template<typename Action, typename PlayerNode, typename ChanceNode>
 static std::vector<float> ToFloatList
 (
@@ -322,49 +362,33 @@ static std::vector<float> ToFloatList
 	return floatList;
 }
 
-//template<typename Action, typename PlayerNode, typename ChanceNode>
-//class HistoryList {
-//public:
-//	std::vector<TreeNode<Action, PlayerNode, ChanceNode>*> mList;
-//
-//	HistoryList() {}
-//	void push_back(TreeNode<Action, PlayerNode, ChanceNode>* node) {
-//		mList.push_back(node);
-//	}
-//	typename std::vector<TreeNode<Action, PlayerNode, ChanceNode>*>::iterator begin() { return mList.begin(); }
-//	typename std::vector<TreeNode<Action, PlayerNode, ChanceNode>*>::iterator end() { return mList.end(); }
-//	int size() { return mList.size(); }
-//};
-
+/**
+ * @brief Requirements for the client to be able to use the generic cfr class.
+ */
 namespace CfrConcepts {
 
-	
-
-
+	/*Player Node must have function that returns child node of an action.*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
 	concept PlayerNodeChildFunc = requires( Action a, PlayerNode p, GameState g ) {
-
-		/*Player Node must have function that returns child node of an action.*/
 		{ p.Child(a, &g) } -> std::convertible_to<ClientNode<Action, PlayerNode, ChanceNode>>;
 
 	};
 
+	/*Player node must have function that returns a list of actions it can take*/
 	template<typename Action, typename PlayerNode, typename GameState>
 	concept PlayerNodeActionListFunc = requires ( PlayerNode p, GameState g ) {
-		/*Player node must have function that returns a list of actions it can take*/
 		{ p.ActionList(&g) } -> std::convertible_to<std::vector<Action>>;
 	};
 
 
-
+	/*Chance Node must have function that returns vector of child nodes*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
 	concept ChanceNodeChildrenFunc = requires( Action a, PlayerNode p, ChanceNode c, GameState g ) {
-
-		/*Chance Node must have function that returns vector of child nodes*/
 		{ c.Children(&g) } -> std::convertible_to<std::vector<ClientNode<Action, PlayerNode, ChanceNode>>>;
 
 	};
 
+	/*Client Game class must have a function that evaluates the utility at a terminal node.*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	concept NeedsUtilityFunc = requires( Action a, PlayerNode p, ChanceNode c, GameClass g ) {
 		
