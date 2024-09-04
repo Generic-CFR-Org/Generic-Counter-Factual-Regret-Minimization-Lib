@@ -49,19 +49,19 @@ using byte = unsigned char;
 SearchTreeNode::SearchTreeNode(byte* pos) {
 
 	TreeUtils::byte* initialPos = pos;
-	mIdentifier = (char) *( pos++ );
+	mIdentifier = static_cast<char>(*(pos++));
 	if (mIdentifier == 'p' || mIdentifier == 'c') {
 		mNumChildren = (uint8_t) *( pos++ );
 		mpChildStartOffset = TreeUtils::GetBytePtrAtBytePtr(pos);
 		pos += sizeof(byte*);
 	}
 	if (mIdentifier == 'p') {
-		mIsPlayerOne = (bool) *(pos++);
+		mIsPlayerOne = static_cast<bool>(*pos++);
 		mpInfoSetPtr = TreeUtils::GetBytePtrAtBytePtr(pos);
 		pos += sizeof(byte*);
 	}
 	if (mIdentifier == 'c') {
-		mpChildProbs = reinterpret_cast<float*>(pos);
+		mpChildProbs = pos;
 		pos += (mNumChildren * sizeof(float));
 	}
 	if (mIdentifier == 't') {
@@ -69,7 +69,7 @@ SearchTreeNode::SearchTreeNode(byte* pos) {
 		pos += sizeof(float);
 	}
 	mpNextNode = pos;
-	mSizeInTree = (int) ( pos - initialPos );
+	mSizeInTree = static_cast<int>(pos - initialPos);
 
 }
 
@@ -97,11 +97,11 @@ byte* SearchTreeNode::InfoSetPosition() const
 std::vector<float> SearchTreeNode::ChildProbabilities() const
 {
 	std::vector<float> probs;
-	float* temp = mpChildProbs;
+	byte* temp = mpChildProbs;
 	if (this->IsChanceNode()) {
 		for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
-			probs.push_back(*temp);
-			temp++;
+			probs.push_back(TreeUtils::GetFloatFromBytePtr(temp));
+			temp += sizeof(float);
 		}
 	}
 	return probs;
@@ -111,16 +111,37 @@ std::vector<float> SearchTreeNode::CumulativeChildProbs() const
 {
 	std::vector<float> probs;
 	float runningCnt = 0;
-	float* temp = mpChildProbs;
+	byte* temp = mpChildProbs;
 	if (this->IsChanceNode()) {
 		for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
 			probs.push_back(runningCnt);
-			runningCnt += *temp;
-			temp++;
+			runningCnt += TreeUtils::GetFloatFromBytePtr(temp);
+			temp += sizeof(float);
 		}
 		probs.push_back(runningCnt);
 	}
 	return probs;
+}
+
+SearchTreeNode SearchTreeNode::SampleChild() const
+{
+	if (mNumChildren == 1)
+	{
+		return SearchTreeNode{mpChildStartOffset};
+	}
+	float randFloat = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+	float cumulativeProb = 0;
+	int childIndex = 0;
+	byte* childProbPos = mpChildProbs;
+	for (childIndex; childIndex < mNumChildren; childIndex++)
+	{
+		if (randFloat > cumulativeProb) {break;}
+		cumulativeProb += TreeUtils::GetFloatFromBytePtr(childProbPos);
+		childProbPos += sizeof(float);
+
+	}
+	std::vector<SearchTreeNode> children = this->AllChildren();
+	return children.at(childIndex);
 }
 
 float SearchTreeNode::Utility() const

@@ -100,7 +100,7 @@ protected:
 	byte* mpInfoSetPtr = (byte*) 0;
 
 	//Used to access probabilities for each child for chance nodes.
-	float* mpChildProbs = (float*) 0;
+	byte* mpChildProbs = nullptr;
 
 	//Used to get utility for each terminal node.
 	float mUtility = 0;
@@ -131,6 +131,8 @@ public:
 
 	std::vector<float> CumulativeChildProbs() const;
 
+	SearchTreeNode SampleChild() const;
+
 	float Utility() const;
 
 	byte* NextNodePos() const;
@@ -149,10 +151,12 @@ std::ostream& operator<<(std::ostream& os, SearchTreeNode& searchNode);
  */
 class InfoSetData {
 
+	using byte = unsigned char;
+
 	uint8_t mNumActions;
-	float* mpCurrStrategy;
-	float* mpCumStrategy;
-	float* mpCumRegret;
+	byte* mpCurrStrategy;
+	byte* mpCumStrategy;
+	byte* mpCumRegret;
 
 public:
 	InfoSetData(TreeUtils::byte* pos);

@@ -25,11 +25,6 @@ int main(int argc, char* argv[]) {
 	tree->ChanceSamplingCFRwithAccuracy(0.5);
 	std::cout << "After CFR: \n\n";
 	tree->PrintTree();
-	/*tree->PrintGameTree();*/
-
-	/*tree->CFR(1000);
-
-	std::cout << "After CFR: \n\n";
-	tree->PrintGameTree();*/
+	
 }
 

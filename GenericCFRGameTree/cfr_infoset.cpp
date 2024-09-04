@@ -9,8 +9,8 @@ int TreeUtils::InfoSetSize(int numActions) {
 }
 
 TreeUtils::byte* TreeUtils::SetInfoSetNode(byte* pos, int numActions) {
-	*(pos++) = ( uint8_t ) numActions;
-	float uniformProb = 1.0 / (float) numActions;
+	*(pos++) = static_cast<uint8_t>(numActions);
+	float uniformProb = static_cast<float>(1.0) / static_cast<float>(numActions);
 	for (int iUniformStrat = 0; iUniformStrat < numActions; iUniformStrat++) {
 		TreeUtils::SetFloatAtBytePtr(pos, uniformProb);
 		pos += sizeof(float);
@@ -26,18 +26,18 @@ TreeUtils::byte* TreeUtils::SetInfoSetNode(byte* pos, int numActions) {
 using byte = unsigned char;
 
 InfoSetData::InfoSetData(byte* pos) {
-	mNumActions = ( uint8_t ) * ( pos++ );
+	mNumActions = ( uint8_t ) *(pos++);
 	int arrSize = mNumActions * sizeof(float);
-	mpCurrStrategy = reinterpret_cast<float*>(pos);
+	mpCurrStrategy = pos;
 	pos += arrSize;
-	mpCumStrategy = reinterpret_cast<float*>( pos );
+	mpCumStrategy = pos;
 	pos += arrSize;
-	mpCumRegret = reinterpret_cast<float*>( pos );
+	mpCumRegret = pos;
 	pos += arrSize;
 }
 
 int InfoSetData::size() {
-	return sizeof(uint8_t) + ( 3 * mNumActions * sizeof(float) );
+	return (3 * mNumActions * sizeof(float)) + sizeof(uint8_t);
 }
 
 int InfoSetData::numActions() {
@@ -45,34 +45,34 @@ int InfoSetData::numActions() {
 }
 
 float InfoSetData::GetCurrentStrategy(int index) {
-	byte* iFloat = (byte*) ( mpCurrStrategy + index );
+	byte* iFloat = mpCurrStrategy + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 float InfoSetData::GetCumulativeStrategy(int index) {
-	byte* iFloat = (byte*) ( mpCumStrategy + index );
+	byte* iFloat = mpCumStrategy + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 float InfoSetData::GetCumulativeRegret(int index) {
-	byte* iFloat = (byte*) ( mpCumRegret + index );
+	byte* iFloat = mpCumRegret + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 void InfoSetData::SetCurrentStrategy(float prob, int index) {
-	byte* iFloat = (byte*) ( mpCurrStrategy + index );
+	byte* iFloat = mpCurrStrategy + (sizeof(float) * index);
 	TreeUtils::SetFloatAtBytePtr(iFloat, prob);
 }
 
 void InfoSetData::AddToCumulativeStrategy(float prob, int index) {
 	float newTotal = GetCumulativeStrategy(index) + prob;
-	byte* iFloat = (byte*) ( mpCumStrategy + index );
+	byte* iFloat =  mpCumStrategy + ( sizeof(float) * index );
 	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
 }
 
 void InfoSetData::AddToCumulativeRegret(float prob, int index) {
 	float newTotal = GetCumulativeRegret(index) + prob;
-	byte* iFloat = (byte*) ( mpCumRegret + index );
+	byte* iFloat = mpCumRegret + ( sizeof(float) * index );
 	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
 }
 

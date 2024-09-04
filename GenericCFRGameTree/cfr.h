@@ -359,6 +359,8 @@ ChanceSamplingCFR(int iterations) {
 
 		ChanceSamplingCfrRecursive(rootChance, true, iCfr, 1, 1);
 		ChanceSamplingCfrRecursive(rootChance, false, iCfr, 1, 1);
+		
+		
 	}
 	std::unordered_set<byte*> seenInfoSets;
 	AverageStrategy(rootChance, seenInfoSets);
@@ -381,9 +383,9 @@ BaseCFRwithAccuracy(float accuracy) {
 			i++;
 		}
 		//One last iteration to calculate exploitability
-		float playerOneEv = BaseCfrRecursive(rootChance, true, i, 1, 1);
-		float playerTwoEv = BaseCfrRecursive(rootChance, false, i, 1, 1);
-		exploitability = playerOneEv + playerTwoEv;
+		BaseCfrRecursive(rootChance, true, i, 1, 1);
+		BaseCfrRecursive(rootChance, false, i, 1, 1);
+		
 		i++;
 	}
 }
@@ -405,11 +407,10 @@ ChanceSamplingCFRwithAccuracy(float accuracy) {
 			i++;
 		}
 		//One last iteration to calculate exploitability
-		float playerOneEv = BaseCfrRecursive(rootChance, true, i, 1, 1);
-		float playerTwoEv = BaseCfrRecursive(rootChance, false, i, 1, 1);
-
-		exploitability = playerOneEv + playerTwoEv;
-
+		float playerOneEv = ChanceSamplingCfrRecursive(rootChance, true, i, 1, 1);
+		float playerTwoEv = ChanceSamplingCfrRecursive(rootChance, false, i, 1, 1);
+		
+		exploitability = playerOneEv - playerTwoEv;
 		i++;
 	}
 	std::unordered_set<byte*> seenInfoSets;
@@ -675,13 +676,9 @@ ChanceSamplingCfrRecursive(
 		return node.Utility();
 	}
 	else if (node.IsChanceNode()) {
-		
-		
-		std::vector<SearchTreeNode> children = node.AllChildren();
 
-		//Sample child state using node's probability list.
-		int sampleIndex = SampleChanceNodeIndex(node);
-		return ChanceSamplingCfrRecursive(children.at(sampleIndex), isPlayerOne, iteration, playerOneReachProb, playerTwoReachProb);
+		SearchTreeNode child = node.SampleChild();
+		return ChanceSamplingCfrRecursive(child, isPlayerOne, iteration, playerOneReachProb, playerTwoReachProb);
 	}
 	else {
 		float val = 0;
@@ -689,23 +686,27 @@ ChanceSamplingCfrRecursive(
 		std::vector<SearchTreeNode> children = node.AllChildren();
 		std::vector<float> childUtilities(numChildren, 0);
 		InfoSetData infoSet = InfoSetData(node.InfoSetPosition());
+		
 		for (int iAction = 0; iAction < numChildren; iAction++) {
 			float currStratProb = infoSet.GetCurrentStrategy(iAction);
 			float childUtility;
 			if (node.IsPlayerOne()) {
 
-				childUtility = BaseCfrRecursive(children.at(iAction), isPlayerOne,
+				childUtility = ChanceSamplingCfrRecursive(children.at(iAction), isPlayerOne,
 												iteration, currStratProb * playerOneReachProb,
 												playerTwoReachProb);
 			}
 			else {
-				childUtility = BaseCfrRecursive(children.at(iAction), isPlayerOne,
+				childUtility = ChanceSamplingCfrRecursive(children.at(iAction), isPlayerOne,
 												iteration, playerOneReachProb,
 												currStratProb * playerTwoReachProb);
 			}
+			
 			childUtilities.at(iAction) = childUtility;
 			val += currStratProb * childUtility;
 		}
+		
+		
 		if (node.IsPlayerOne() == isPlayerOne) {
 			float regretProb;
 			float stratProb;
@@ -748,9 +749,10 @@ NewStrategy(InfoSetData& infoSet) {
 	float regretSum = 0;
 	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
 		float actionRegret = infoSet.GetCumulativeRegret(iAction);
-		regretSum += actionRegret;
+		
 		if (actionRegret > 0) {
 			infoSet.SetCurrentStrategy(actionRegret, iAction);
+			regretSum += actionRegret;
 		}
 		else {
 			infoSet.SetCurrentStrategy(0.0, iAction);
@@ -760,6 +762,10 @@ NewStrategy(InfoSetData& infoSet) {
 	for (int iAction = 0; iAction < infoSet.numActions(); iAction++) {
 		if (regretSum > 0) {
 			float currStrat = infoSet.GetCurrentStrategy(iAction);
+			if (currStrat < 0)
+			{
+				throw std::exception("invalid probability");
+			}
 			infoSet.SetCurrentStrategy(currStrat / regretSum, iAction);
 		}
 		else {
