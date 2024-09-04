@@ -11,6 +11,8 @@
 #include <string>
 #include <iostream>
 #include <random>
+#include <ranges>
+
 #include "nodes.h"
 #include "cfr_tree_nodes.h"
 
@@ -155,9 +157,8 @@ private:
 	/**
 		* @brief Function that preprocess tree to find total size ot allcoate.
 		*/
-	void PreProcessTree(
-		NodeList& nodesToExplore, NodeList& nextChildren,
-		InfoSetSizes& infoSetSizeMap, long& searchSize, long& infoSetSize
+	long long PreProcessTree(
+		InfoSetSizes& infoSetSizeMap, long long& infoSetSize, std::unordered_map<int, long long>& depthMap, int currDepth
 	);
 
 	/**
@@ -165,9 +166,9 @@ private:
 		*		  Updates infoSetMap to track number of infosets and their sizes.
 		* @return Size of the search node in the search tree.
 		*/
-	int ExploreNode (
-		CfrTreeNode* searchNode, NodeList& nextChildNodes,
-		InfoSetSizes& infoSetMap
+	long long ExploreNode(
+		CfrTreeNode* searchNode,
+		InfoSetSizes& infoSetMap, std::unordered_map<int, long long>& depthMapSize, int currDepth
 	);
 
 	/**
@@ -182,9 +183,9 @@ private:
 		* @brief Sets a single node in the search tree.
 		* @return Returns pointer to position to set next node.
 		*/
-	byte* SetNode (
-		CfrTreeNode* searchNode, byte* nodePos, 
-		InfoSetPositions& infoSetPosMap
+	void SetNode(
+		CfrTreeNode* searchNode,
+		int depth, std::unordered_map<int, long long>& cumulativeOffsets, InfoSetPositions& infoSetPosMap
 	);
 
 	/**
@@ -192,9 +193,9 @@ private:
 		*		  Update info set pos map for player nodes in search tree.
 		*/
 	void SetInfoSets(
-		long infoSetOffset, InfoSetSizes& infoSetSizeMap, 
+		InfoSetSizes& infoSetSizeMap,
 		InfoSetPositions& infoSetPosMap
-	);
+	) const;
 
 	/**
 		* @brief Set all search nodes in the search tree.
@@ -259,9 +260,72 @@ template<typename Action, typename PlayerNode, typename ChanceNode, typename Gam
 requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 ConstructTree() {
-	CfrTreeNode *root = new CfrTreeNode(mStartingChanceNode);
-	NodeList startingList = NodeList(1, root);
-	ConstructTreeHelper(0, 0, startingList);
+	
+	/*
+	########################################################
+	# Stage 1: Preprocessing tree to allocate correct size #
+	########################################################
+	*/
+	//Initialize Root node.
+	CfrTreeNode* root = new CfrTreeNode(mStartingChanceNode);
+
+	//Initialize unordered map for current depth to track info set sizes.
+	InfoSetSizes infoSetSizes;
+
+	//Initialize unordered map to track size at each depth of the tree.
+	std::unordered_map<int, long long> depthSizes;
+
+	//Explore all children and update info set and depth size maps.
+	long long searchTreeSize = ExploreNode(root, infoSetSizes, depthSizes, 0);
+
+	//Get info set size from the infoSetSizes map.
+	long long infoSetSize = 0;
+	for (const auto& val : infoSetSizes | std::views::values) {
+		infoSetSize += TreeUtils::InfoSetSize(val);
+	}
+
+
+	/*
+	##############################
+	## Stage 2: Allocate memory ##
+	##############################
+	*/
+
+	this->mpGameTree = new byte[searchTreeSize];
+	this->mpRegretTable = new byte[infoSetSize];
+	mSearchTreeSize = searchTreeSize;
+	mInfoSetTableSize = infoSetSize;
+	
+
+	/*
+	########################################################
+	## Stage 3: Set Info Sets and update their positions  ##
+	########################################################
+	*/
+
+	InfoSetPositions info_set_positions;
+	SetInfoSets(infoSetSizes, info_set_positions);
+
+	/*
+	####################################
+	## Stage 3: Set Search Tree nodes ##
+	####################################
+	*/
+
+	//Generate cumulative offset map to find a node's appropriate position in the search tree.
+	long long offsetAtDepth = 0;
+	std::unordered_map<int, long long> depthOffsets;
+	depthOffsets[0] = offsetAtDepth;
+	int iDepth = 1;
+	for (const auto& val : depthSizes | std::views::values) {
+		offsetAtDepth += val;
+		depthOffsets[iDepth] = offsetAtDepth;
+		iDepth++;
+	}
+
+	//Set nodes 
+	SetNode(root, 0, depthOffsets, info_set_positions);
+
 }
 
 
@@ -365,156 +429,90 @@ ChanceSamplingCFRwithAccuracy(float accuracy) {
 #########################################
 */
 
-template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
-inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
-ConstructTreeHelper(
-	long cumSearchTreeSize, long cumInfoSetTableSize,
-	NodeList& nodesToExplore
-) {
-
-	/*
-	########################################################
-	# Stage 1: Preprocessing tree to allocate correct size #
-	########################################################
-	*/
-
-	/*Store next children in arrays*/
-	NodeList nextChildren;
-
-	//Initialize unordered map for current depth to track info set sizes.
-	InfoSetSizes infoSetSizes;
-	//Initialize long values to store size of search / info set trees.
-	long currSearchSize = 0;
-	long currInfoSetSize = 0;
-
-	//Explore all children and update cumulative size.
-	PreProcessTree(nodesToExplore, nextChildren, infoSetSizes,
-				   currSearchSize, currInfoSetSize);
-
-	long nextSearchTreeSize = cumSearchTreeSize + currSearchSize;
-	long nextInfoSetSize = cumInfoSetTableSize + currInfoSetSize;
-
-	/*
-	##########################################
-	## Stage 2: Determine if at final depth ##
-	##########################################
-
-	If at final depth, allocate both the search tree and Info set table.
-	If not, recurse to next depth before node allocation.
-	*/
-
-	if (nodesToExplore.size() == 0) {
-		this->mpGameTree = new byte[nextSearchTreeSize];
-		this->mpRegretTable = new byte[nextInfoSetSize];
-		mSearchTreeSize = nextSearchTreeSize;
-		mInfoSetTableSize = nextInfoSetSize;
-	}
-	else {
-
-		ConstructTreeHelper(nextSearchTreeSize,
-							nextInfoSetSize, nextChildren);
-	}
-
-	/*
-	##################################################
-	## Stage 3: Set Info Sets and Search Tree Nodes ##
-	##################################################
-
-	After recursive call returns, set all nodes as the tree has been
-	allocated.
-	- Player Nodes are given pointer to their respective info set.
-	- Setting nodes updates their parents to their offsets.
-	*/
-	SetAllNodes(cumSearchTreeSize, cumInfoSetTableSize, nodesToExplore, infoSetSizes);
-}
-
-template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
-inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
-PreProcessTree(
-	NodeList& nodesToExplore, NodeList& nextChildren,
-	InfoSetSizes& infoSetSizeMap, long& searchSize, long& infoSetSize
-) {
-	for (CfrTreeNode* currNode : nodesToExplore) {
-		searchSize += ExploreNode(currNode, nextChildren, infoSetSizeMap);
-	}
-	//Update infoset size.
-	for (const auto& [key, val] : infoSetSizeMap) {
-		infoSetSize += TreeUtils::InfoSetSize(val);
-	}
-	return;
-}
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
-inline int CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
+inline long long CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 ExploreNode(
-	CfrTreeNode* searchNode, NodeList& nextChildNodes, InfoSetSizes& infoSetMap
+	CfrTreeNode* searchNode, InfoSetSizes& infoSetMap,
+	std::unordered_map<int, long long>& depthMapSize, int currDepth
 ) {
-		
+
+	if (static_cast<int>( depthMapSize.size()) <= currDepth)
+	{
+		depthMapSize.insert({ currDepth, 0 });
+	}
+	long currNodeSize;
+	long subTreeSize = 0;
 	if (searchNode->IsPlayerNode()) {
 		
 		PlayerNode currNode = searchNode->GetPlayerNode();
 		std::vector<Action> actions = currNode.ActionList(mpStaticGameInfo);
+		currNodeSize = TreeUtils::PLAYER_NODE_SIZE;
 		for (Action a : actions) {
 			CfrTreeNode child = currNode.Child(a, mpStaticGameInfo);
 
-			//Allocate child, point to parent, and add to next nodes to explore.
+			//Allocate child, and explore it.
 			CfrTreeNode* nextChild = new CfrTreeNode(child, searchNode);
-			nextChildNodes.push_back(nextChild);
+			subTreeSize += ExploreNode(nextChild, infoSetMap, depthMapSize, currDepth + 1);
+			delete nextChild;
 		}
 		//Use node to find history hash set number of actions of the info set.
 		std::string historyHash = searchNode->HistoryHash();
 		infoSetMap.insert({ historyHash, actions.size() });
 
-		//Return size of the node.
-		return TreeUtils::PLAYER_NODE_SIZE;
+		
 	}
 	else if (searchNode->IsChanceNode()) {
 		
 		ChanceNode currNode = searchNode->GetChanceNode();
 		std::vector<CfrClientNode> children = currNode.Children(mpStaticGameInfo);
 		//Add each chance node child to next chance child nodes.
-		for (CfrClientNode child : children) {
+		currNodeSize = TreeUtils::ChanceNodeSizeInTree(children.size());
+		for (const CfrClientNode& child : children) {
 
 			CfrTreeNode *nextChild = new CfrTreeNode(child, searchNode);
-			nextChildNodes.push_back(nextChild);
+			subTreeSize += ExploreNode(nextChild, infoSetMap, depthMapSize, currDepth + 1);
+			delete nextChild;
 		}
-		//Return size of the chance node in the search tree.
-		return TreeUtils::ChanceNodeSizeInTree(children.size());
 	}
-	//Else if terminal, return static terminal node size.
-	
-	return TreeUtils::TERMINAL_SIZE;
+	else
+	{
+		//Else if terminal, return static terminal node size.
+		currNodeSize = TreeUtils::TERMINAL_SIZE;
+	}
+
+	long long oldDepthSize = depthMapSize.at(currDepth);
+	depthMapSize.insert_or_assign(currDepth, oldDepthSize + currNodeSize);
+
+	return subTreeSize + currNodeSize;
 }
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
-SetAllNodes(
-	long searchOffset, long infoSetOffset,
-	NodeList& nodesToSet, InfoSetSizes& infoSetSizeMap
-	) {
-	//Initialize map to store position of each info set once set.
-	InfoSetPositions infoSetPosMap;
+SetNode(
+	CfrTreeNode* searchNode, int depth,
+	std::unordered_map<int, long long>& cumulativeOffsets,
+	InfoSetPositions& infoSetPosMap
+) {
 
-	//Set all Info Set nodes.
-	SetInfoSets(infoSetOffset, infoSetSizeMap, infoSetPosMap);
-
-	//Use info set position map to set all search tree nodes.
-	SetSearchNodes(searchOffset, nodesToSet, infoSetPosMap);
-}
-
-template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
-inline byte* CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
-SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap) {
-		
+	long long childNodeSize;
+	byte* currOffset = mpGameTree + cumulativeOffsets[depth];
 	if (searchNode->IsPlayerNode()) {
+
 		PlayerNode currNode = searchNode->GetPlayerNode();
 		std::vector<Action> actions = currNode.ActionList(mpStaticGameInfo);
 		int numChildren = actions.size();
+
+		/*Recursive over all children to get child offset*/
+		for (Action a : actions)
+		{
+			CfrTreeNode child = currNode.Child(a, mpStaticGameInfo);
+			CfrTreeNode* nextChild = new CfrTreeNode(child, searchNode);
+			SetNode(nextChild, depth + 1, cumulativeOffsets, infoSetPosMap);
+		}
+
 		byte* childStartOffset = searchNode->GetChildOffset();
 		bool isPlayerOne = currNode.IsPlayerOne();
 
@@ -523,67 +521,70 @@ SetNode(CfrTreeNode* searchNode, byte* nodePos, InfoSetPositions& infoSetPosMap)
 		byte* infoSetPos = infoSetPosMap.at(historyHash);
 
 		//Update parent child start offset.
-		searchNode->UpdateParentOffset(nodePos);
+		searchNode->UpdateParentOffset(currOffset);
 
 		//Once node is set, it can be safely deleted.
 		delete searchNode;
 
-		//Set player node and return byte* to next node.
-		return TreeUtils::SetPlayerNode(nodePos, numChildren, childStartOffset, isPlayerOne, infoSetPos);
+		//Set player node
+		TreeUtils::SetPlayerNode(currOffset, numChildren, childStartOffset, isPlayerOne, infoSetPos);
+		childNodeSize =  TreeUtils::PLAYER_NODE_SIZE;
 	}
 	else if (searchNode->IsChanceNode()) {
+
 		ChanceNode currNode = searchNode->GetChanceNode();
 		std::vector<CfrClientNode> children = currNode.Children(mpStaticGameInfo);
 		std::vector<float> probList = ToFloatList(children);
+
+		for (const CfrClientNode& child : children) {
+
+			CfrTreeNode* nextChild = new CfrTreeNode(child, searchNode);
+			SetNode(nextChild, depth + 1, cumulativeOffsets, infoSetPosMap);
+		}
+
 		byte* childStartOffset = searchNode->GetChildOffset();
 
 		//Update parent child start offset.
-		searchNode->UpdateParentOffset(nodePos);
+		searchNode->UpdateParentOffset(currOffset);
+
+		//Set chance node in the game tree.
+		TreeUtils::SetChanceNode(currOffset, childStartOffset, probList);
+
+		childNodeSize = TreeUtils::ChanceNodeSizeInTree(children.size());
+		//Once node is set, it can be safely deleted.
+		delete searchNode;
+	}
+	else
+	{
+		//Else set terminal node.
+		HistoryList historyList = searchNode->HistoryList();
+		float utility = mpStaticGameInfo->UtilityFunc(historyList);
+
+		//Update parent child start offset.
+		searchNode->UpdateParentOffset(currOffset);
+
+		TreeUtils::SetTerminalNode(currOffset, utility);
 
 		//Once node is set, it can be safely deleted.
 		delete searchNode;
-
-		//Return size of the chance node in the search tree.
-		return TreeUtils::SetChanceNode(nodePos, childStartOffset, probList);
+		childNodeSize = TreeUtils::TERMINAL_SIZE;
 	}
-	//Else if terminal, return static terminal node size.
-	HistoryList historyList = searchNode->HistoryList();
-	float utility = mpStaticGameInfo->UtilityFunc(historyList);
-
-	//Update parent child start offset.
-	searchNode->UpdateParentOffset(nodePos);
-
-	//Once node is set, it can be safely deleted.
-	delete searchNode;
-
-	return TreeUtils::SetTerminalNode(nodePos, utility);
+	//Update cumulative offset map.
+	cumulativeOffsets[depth] += childNodeSize;
 }
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 SetInfoSets(
-	long infoSetOffset,
 	InfoSetSizes& infoSetSizeMap,
 	InfoSetPositions& infoSetPosMap
-) {
-	byte* currOffset = mpRegretTable + infoSetOffset;
+) const
+{
+	byte* currOffset = mpRegretTable;
 	for (const auto& [key, val] : infoSetSizeMap) {
 		infoSetPosMap.insert({ key, currOffset });
 		currOffset = TreeUtils::SetInfoSetNode(currOffset, val);
-	}
-}
-
-template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
-inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
-SetSearchNodes(
-	long searchOffset, NodeList& nodesToSet,
-	InfoSetPositions& infoSetPosMap
-) {
-	byte* currPos = mpGameTree + searchOffset;
-	for (CfrTreeNode* nodeToSet : nodesToSet) {
-		currPos = SetNode(nodeToSet, currPos, infoSetPosMap);
 	}
 }
 

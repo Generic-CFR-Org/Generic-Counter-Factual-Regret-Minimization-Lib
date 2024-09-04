@@ -11,7 +11,7 @@ TreeUtils::byte* TreeUtils::SetPlayerNode
 {
 	byte* temp = treePos;
 	*(temp++) = (char) 'p';
-	*(temp++) = (uint8_t) numChildren;
+	*(temp++) = static_cast<uint8_t>(numChildren);
 	TreeUtils::SetBytePtrAtBytePtr(temp, childrenStart);
 	temp += sizeof(byte*);
 	*(temp++) = (bool) isPlayerOne;
@@ -26,7 +26,7 @@ TreeUtils::byte* TreeUtils::SetChanceNode(
 ) {
 	byte* temp = treePos;
 	*( temp++ ) = (char) 'c';
-	*( temp++ ) = (uint8_t) childProbs.size();
+	*( temp++ ) = static_cast<uint8_t>(childProbs.size());
 	TreeUtils::SetBytePtrAtBytePtr(temp, childrenStart);
 	temp += sizeof(byte*);
 	for (float prob : childProbs) {
