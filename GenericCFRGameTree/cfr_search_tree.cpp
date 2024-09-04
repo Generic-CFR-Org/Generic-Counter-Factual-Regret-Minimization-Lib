@@ -73,7 +73,72 @@ SearchTreeNode::SearchTreeNode(byte* pos) {
 
 }
 
-std::vector<SearchTreeNode> SearchTreeNode::AllChildren() {
+bool SearchTreeNode::IsPlayerNode() const
+{ return mIdentifier == 'p'; }
+
+bool SearchTreeNode::IsChanceNode() const
+{ return mIdentifier == 'c'; }
+
+bool SearchTreeNode::IsTerminalNode() const
+{ return mIdentifier == 't'; }
+
+uint8_t SearchTreeNode::NumChildren() const
+{ return mNumChildren; }
+
+byte* SearchTreeNode::ChildrenStartOffset() const
+{ return mpChildStartOffset; }
+
+bool SearchTreeNode::IsPlayerOne() const
+{ return mIsPlayerOne; }
+
+byte* SearchTreeNode::InfoSetPosition() const
+{ return mpInfoSetPtr; }
+
+std::vector<float> SearchTreeNode::ChildProbabilities() const
+{
+	std::vector<float> probs;
+	float* temp = mpChildProbs;
+	if (this->IsChanceNode()) {
+		for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
+			probs.push_back(*temp);
+			temp++;
+		}
+	}
+	return probs;
+}
+
+std::vector<float> SearchTreeNode::CumulativeChildProbs() const
+{
+	std::vector<float> probs;
+	float runningCnt = 0;
+	float* temp = mpChildProbs;
+	if (this->IsChanceNode()) {
+		for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
+			probs.push_back(runningCnt);
+			runningCnt += *temp;
+			temp++;
+		}
+		probs.push_back(runningCnt);
+	}
+	return probs;
+}
+
+float SearchTreeNode::Utility() const
+{
+	if (this->IsTerminalNode()) {
+		return mUtility;
+	}
+	return 0.0;
+}
+
+byte* SearchTreeNode::NextNodePos() const
+{ return mpNextNode; }
+
+SearchTreeNode SearchTreeNode::NextNode() const
+{ return SearchTreeNode{ mpNextNode }; }
+
+std::vector<SearchTreeNode> SearchTreeNode::AllChildren() const
+{
 	std::vector<SearchTreeNode> children;
 	byte* currPos = mpChildStartOffset;
 	for (int iChild = 0; iChild < mNumChildren; iChild++) {
@@ -83,6 +148,9 @@ std::vector<SearchTreeNode> SearchTreeNode::AllChildren() {
 	}
 	return children;
 }
+
+int SearchTreeNode::SizeInTree() const
+{ return mSizeInTree; }
 
 std::ostream& operator<<(std::ostream& os, SearchTreeNode& searchNode) {
 	if (searchNode.IsPlayerNode()) {

@@ -118,52 +118,27 @@ public:
 
 	SearchTreeNode(byte* pTree, long offset) : SearchTreeNode(pTree + offset) {}
 
-	bool IsPlayerNode() { return mIdentifier == 'p'; }
-	bool IsChanceNode() { return mIdentifier == 'c'; }
-	bool IsTerminalNode() { return mIdentifier == 't'; }
+	bool IsPlayerNode() const;
+	bool IsChanceNode() const;
+	bool IsTerminalNode() const;
 
-	uint8_t NumChildren() { return mNumChildren; }
-	byte* ChildrenStartOffset() { return mpChildStartOffset; }
-	bool IsPlayerOne() { return mIsPlayerOne; }
-	byte* InfoSetPosition() { return mpInfoSetPtr; }
-	std::vector<float> ChildProbabilities() {
-		std::vector<float> probs;
-		float* temp = mpChildProbs;
-		if (this->IsChanceNode()) {
-			for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
-				probs.push_back(*temp);
-				temp++;
-			}
-		}
-		return probs;
-	}
-	std::vector<float> CumulativeChildProbs() {
-		std::vector<float> probs;
-		float runningCnt = 0;
-		float* temp = mpChildProbs;
-		if (this->IsChanceNode()) {
-			for (int iFloat = 0; iFloat < mNumChildren; iFloat++) {
-				probs.push_back(runningCnt);
-				runningCnt += *temp;
-				temp++;
-			}
-			probs.push_back(runningCnt);
-		}
-		return probs;
-	}
-	float Utility() {
-		if (this->IsTerminalNode()) {
-			return mUtility;
-		}
-		return 0.0;
-	}
+	uint8_t NumChildren() const;
+	byte* ChildrenStartOffset() const;
+	bool IsPlayerOne() const;
+	byte* InfoSetPosition() const;
 
-	byte* NextNodePos() { return mpNextNode; }
-	SearchTreeNode NextNode() { return SearchTreeNode{ mpNextNode }; }
+	std::vector<float> ChildProbabilities() const;
 
-	std::vector<SearchTreeNode> AllChildren();
+	std::vector<float> CumulativeChildProbs() const;
 
-	int SizeInTree() { return mSizeInTree; }
+	float Utility() const;
+
+	byte* NextNodePos() const;
+	SearchTreeNode NextNode() const;
+
+	std::vector<SearchTreeNode> AllChildren() const;
+
+	int SizeInTree() const;
 };
 
 std::ostream& operator<<(std::ostream& os, SearchTreeNode& searchNode);

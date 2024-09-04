@@ -1,4 +1,5 @@
 #pragma once
+#include <complex>
 #include "pch.h"
 #include "framework.h"
 #include <cstddef>
@@ -12,6 +13,7 @@
 #include <random>
 #include "nodes.h"
 #include "cfr_tree_nodes.h"
+
 
 using byte = unsigned char;
 
@@ -610,10 +612,11 @@ BaseCfrRecursive(
 		std::vector<SearchTreeNode> children = node.AllChildren();
 		for (SearchTreeNode& child : children) {
 			float childUtil = BaseCfrRecursive(child, isPlayerOne, iteration, playerOneReachProb, playerTwoReachProb);
-			float childReachProb = childProbabilities.at(childIndex);
+			float childReachProb = childProbabilities[childIndex];
 			val += childReachProb * childUtil;
 			childIndex++;
 		}
+		return val;
 	}
 	else {
 		float val = 0;
