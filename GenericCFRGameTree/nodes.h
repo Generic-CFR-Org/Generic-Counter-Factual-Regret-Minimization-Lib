@@ -5,7 +5,7 @@
 #include <concepts>
 #include <functional>
 #include <string>
-#include "cfr.h"
+
 
 
 /**
@@ -18,7 +18,7 @@ namespace CfrConcepts {
 	 - PlayerNode must have ToInfoSetHash() func that returns a string for the player view.
 	 */
 	template<typename Action, typename PlayerNode, typename ChanceNode>
-	concept Hashable = requires( Action a, PlayerNode p, ChanceNode c ) {
+	concept Hashable = requires( const Action a, const PlayerNode p, const ChanceNode c ) {
 		/*All Game classes must have ToHash() func that returns a string.*/
 		{ a.ToHash() } -> std::convertible_to<std::string>;
 		{ p.ToHash() } -> std::convertible_to<std::string>;
@@ -32,9 +32,8 @@ namespace CfrConcepts {
 	for the currently acting player
 	*/
 	template<typename PlayerNode>
-	concept PlayerNodePlayerOneFunc = requires( PlayerNode p ) {
+	concept PlayerNodePlayerOneFunc = requires( const PlayerNode p ) {
 
-		
 		{ p.IsPlayerOne() } -> std::convertible_to<bool>;
 
 	};
@@ -50,59 +49,59 @@ namespace CfrConcepts {
 template<typename Action, typename PlayerNode, typename ChanceNode>
 class ClientNode {
 public:
-	Action mAction;
-	PlayerNode mPlayerNode;
-	ChanceNode mChanceNode;
+	Action action_;
+	PlayerNode player_node_;
+	ChanceNode chance_node_;
 
-	float mProbability;
+	float probability_;
 
-	bool mIsPlayerNode;
-	bool mIsChanceNode;
-	bool mIsTerminalNode;
+	bool is_player_node_;
+	bool is_chance_node_;
+	bool is_terminal_node_;
 
 	ClientNode(PlayerNode p) :
-		mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
-		mIsPlayerNode{ true }, mIsChanceNode{ false },
-		mIsTerminalNode{ false } {}
+		action_{}, player_node_{ p }, chance_node_{}, probability_{ 1.0 },
+		is_player_node_{ true }, is_chance_node_{ false },
+		is_terminal_node_{ false } {}
 
 	ClientNode(ChanceNode c) :
-		mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
-		mIsPlayerNode{ false }, mIsChanceNode{ true },
-		mIsTerminalNode{ false } {}
+		action_{}, player_node_{}, chance_node_{ c }, probability_{ 1.0 },
+		is_player_node_{ false }, is_chance_node_{ true },
+		is_terminal_node_{ false } {}
 
 	ClientNode() :
-		mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
-		mIsPlayerNode{ false }, mIsChanceNode{ false },
-		mIsTerminalNode{ true } {}
+		action_{}, player_node_{}, chance_node_{}, probability_{ 1.0 },
+		is_player_node_{ false }, is_chance_node_{ false },
+		is_terminal_node_{ true } {}
 
 	ClientNode(PlayerNode p, float prob) :
-		ClientNode{ p } { mProbability = prob; }
+		ClientNode{ p } { probability_ = prob; }
 
 	ClientNode(ChanceNode c, float prob) :
-		ClientNode{ c } {mProbability = prob; }
+		ClientNode{ c } {probability_ = prob; }
 
 	ClientNode(float prob) :
-		ClientNode{} {mProbability = prob; } 
+		ClientNode{} {probability_ = prob; } 
 
 	ClientNode(PlayerNode p, Action a) :
-		ClientNode{ p } { mAction = a; }
+		ClientNode{ p } { action_ = a; }
 
 	ClientNode(ChanceNode c, Action a) :
-		ClientNode{ c } { mAction = a;}
+		ClientNode{ c } { action_ = a;}
 
 	ClientNode(Action a) :
 		ClientNode{} {
-		mAction = a;
+		action_ = a;
 	}
 
-	bool IsPlayerNode() { return mIsPlayerNode; }
-	bool IsChanceNode() { return mIsChanceNode; }
-	bool IsTerminalNode() { return mIsTerminalNode; }
+	bool IsPlayerNode() const { return is_player_node_; }
+	bool IsChanceNode() const { return is_chance_node_; }
+	bool IsTerminalNode() const { return is_terminal_node_; }
 
-	Action GetAction() { return mAction; }
-	PlayerNode GetPlayerNode() { return mPlayerNode; }
-	ChanceNode GetChanceNode() { return mChanceNode; }
-	float GetProbability() { return mProbability; }
+	Action GetAction() { return action_; }
+	PlayerNode GetPlayerNode() { return player_node_; }
+	ChanceNode GetChanceNode() { return chance_node_; }
+	float GetProbability() const { return probability_; }
 };
 
 
@@ -114,79 +113,79 @@ class TreeNode {
 	using byte = unsigned char;
 	using TreeNodeList = std::vector<TreeNode>;
 protected:
-	Action mAction;
-	PlayerNode mPlayerNode;
-	ChanceNode mChanceNode;
+	Action action_;
+	PlayerNode player_node_;
+	ChanceNode chance_node_;
 
-	float mProbability;
+	float probability_;
 
-	bool mIsPlayerNode;
-	bool mIsChanceNode;
-	bool mIsTerminalNode;
-	TreeNode* mpParent;
-	byte* mpChildStartPos;
-	bool mIsChildStartSet;
+	bool is_player_node_;
+	bool is_chance_node_;
+	bool is_terminal_node_;
+	TreeNode* parent_;
+	byte* child_start_pos_;
+	bool is_child_start_set_;
 
 public:
 
 	TreeNode(const TreeNode<Action, PlayerNode, ChanceNode>& other) {
-		mAction = other.mAction;
-		mPlayerNode = other.mPlayerNode;
-		mChanceNode = other.mChanceNode;
-		mProbability = other.mProbability;
-		mIsPlayerNode = other.mIsPlayerNode;
-		mIsChanceNode = other.mIsChanceNode;
-		mIsTerminalNode = other.mIsTerminalNode;
-		mpParent = other.mpParent;
-		mpChildStartPos = nullptr;
-		mIsChildStartSet = false;
+		action_ = other.action_;
+		player_node_ = other.player_node_;
+		chance_node_ = other.chance_node_;
+		probability_ = other.probability_;
+		is_player_node_ = other.is_player_node_;
+		is_chance_node_ = other.is_chance_node_;
+		is_terminal_node_ = other.is_terminal_node_;
+		parent_ = other.parent_;
+		child_start_pos_ = nullptr;
+		is_child_start_set_ = false;
 	}
 
 	TreeNode (
 		const TreeNode<Action, PlayerNode, ChanceNode>& other,
 		TreeNode<Action, PlayerNode, ChanceNode>* parent
 	) {
-		mAction = other.mAction;
-		mPlayerNode = other.mPlayerNode;
-		mChanceNode = other.mChanceNode;
-		mProbability = other.mProbability;
-		mIsPlayerNode = other.mIsPlayerNode;
-		mIsChanceNode = other.mIsChanceNode;
-		mIsTerminalNode = other.mIsTerminalNode;
-		mpParent = parent;
-		mpChildStartPos = nullptr;
-		mIsChildStartSet = false;
+		action_ = other.action_;
+		player_node_ = other.player_node_;
+		chance_node_ = other.chance_node_;
+		probability_ = other.probability_;
+		is_player_node_ = other.is_player_node_;
+		is_chance_node_ = other.is_chance_node_;
+		is_terminal_node_ = other.is_terminal_node_;
+		parent_ = parent;
+		child_start_pos_ = nullptr;
+		is_child_start_set_ = false;
 	}
 
 	TreeNode(
 		const ClientNode<Action, PlayerNode, ChanceNode>& other
 	) {
-		mAction = other.mAction;
-		mPlayerNode = other.mPlayerNode;
-		mChanceNode = other.mChanceNode;
-		mProbability = other.mProbability;
-		mIsPlayerNode = other.mIsPlayerNode;
-		mIsChanceNode = other.mIsChanceNode;
-		mIsTerminalNode = other.mIsTerminalNode;
-		mpParent = nullptr;
-		mpChildStartPos = nullptr;
-		mIsChildStartSet = false;
+		action_ = other.action_;
+		player_node_ = other.player_node_;
+		chance_node_ = other.chance_node_;
+		probability_ = other.probability_;
+		is_player_node_ = other.is_player_node_;
+		is_chance_node_ = other.is_chance_node_;
+		is_terminal_node_ = other.is_terminal_node_;
+		parent_ = nullptr;
+		child_start_pos_ = nullptr;
+		is_child_start_set_ = false;
 	}
 
 	TreeNode(
 		const ClientNode<Action, PlayerNode, ChanceNode>& other,
 		TreeNode<Action, PlayerNode, ChanceNode>* parent
 	) {
-		mAction = other.mAction;
-		mPlayerNode = other.mPlayerNode;
-		mChanceNode = other.mChanceNode;
-		mProbability = other.mProbability;
-		mIsPlayerNode = other.mIsPlayerNode;
-		mIsChanceNode = other.mIsChanceNode;
-		mIsTerminalNode = other.mIsTerminalNode;
-		mpParent = parent;
-		mpChildStartPos = nullptr;
-		mIsChildStartSet = false;
+		action_ = other.action_;
+		player_node_ = other.player_node_;
+		chance_node_ = other.chance_node_;
+		probability_ = other.probability_;
+		is_player_node_ = other.is_player_node_;
+		is_chance_node_ = other.is_chance_node_;
+		is_terminal_node_ = other.is_terminal_node_;
+		parent_ = parent;
+		child_start_pos_ = nullptr;
+		is_child_start_set_ = false;
 	}
 
 
@@ -195,35 +194,35 @@ public:
 		* @brief Base constructors for each node type. 
 		*/
 	TreeNode(PlayerNode p) :
-		mAction{}, mPlayerNode{ p }, mChanceNode{}, mProbability{ 1.0 },
-		mIsPlayerNode{ true }, mIsChanceNode{ false },
-		mIsTerminalNode{ false }, mpParent{ nullptr },
-		mpChildStartPos{ nullptr }, mIsChildStartSet{ false } {}
+		action_{}, player_node_{ p }, chance_node_{}, probability_{ 1.0 },
+		is_player_node_{ true }, is_chance_node_{ false },
+		is_terminal_node_{ false }, parent_{ nullptr },
+		child_start_pos_{ nullptr }, is_child_start_set_{ false } {}
 
 	TreeNode(ChanceNode c) :
-		mAction{}, mPlayerNode{}, mChanceNode{ c }, mProbability{ 1.0 },
-		mIsPlayerNode{ false }, mIsChanceNode{ true },
-		mIsTerminalNode{ false }, mpParent{ nullptr },
-		mpChildStartPos{nullptr}, mIsChildStartSet{ false } {}
+		action_{}, player_node_{}, chance_node_{ c }, probability_{ 1.0 },
+		is_player_node_{ false }, is_chance_node_{ true },
+		is_terminal_node_{ false }, parent_{ nullptr },
+		child_start_pos_{nullptr}, is_child_start_set_{ false } {}
 
 	TreeNode() :
-		mAction{}, mPlayerNode{}, mChanceNode{}, mProbability{ 1.0 },
-		mIsPlayerNode{ false }, mIsChanceNode{ false },
-		mIsTerminalNode{ true }, mpParent{ nullptr },
-		mpChildStartPos{nullptr}, mIsChildStartSet{ false } {}
+		action_{}, player_node_{}, chance_node_{}, probability_{ 1.0 },
+		is_player_node_{ false }, is_chance_node_{ false },
+		is_terminal_node_{ true }, parent_{ nullptr },
+		child_start_pos_{nullptr}, is_child_start_set_{ false } {}
 
 	/**
 		* @brief Constructors that give node a parent tree node.
 		* @param parent Pointer to parent Tree Node.
 		*/
 	TreeNode(PlayerNode p, TreeNode* parent) : 
-		TreeNode{ p }, mpParent{ parent } {}
+		TreeNode{ p }, parent_{ parent } {}
 
 	TreeNode(ChanceNode c, TreeNode* parent) :
-		TreeNode{ c }, mpParent{ parent } {}
+		TreeNode{ c }, parent_{ parent } {}
 
 	TreeNode(TreeNode* parent) :
-		TreeNode{}, mpParent{ parent } {}
+		TreeNode{}, parent_{ parent } {}
 
 
 	/**
@@ -231,47 +230,47 @@ public:
 		* @param a Action taken by parent node.
 		*/
 	TreeNode(PlayerNode p, Action a) :
-		TreeNode{ p }, mAction{ a } {}
+		TreeNode{ p }, action_{ a } {}
 
 	TreeNode(ChanceNode c, Action a) :
-		TreeNode{ c }, mAction{ a } {}
+		TreeNode{ c }, action_{ a } {}
 
-	TreeNode(Action a) : TreeNode{}, mAction{ a } {}
+	TreeNode(Action a) : TreeNode{}, action_{ a } {}
 
 	/**
 		* @brief Constructors that set probability to get to the node.
 		* @param prob Probability of reach node.
 		*/
 	TreeNode(PlayerNode p, float prob) :
-		TreeNode{ p }, mProbability{ prob } {}
+		TreeNode{ p }, probability_{ prob } {}
 
 	TreeNode(ChanceNode c, float prob) :
-		TreeNode{ c }, mProbability{ prob } {}
+		TreeNode{ c }, probability_{ prob } {}
 
 	TreeNode(float prob) :
-		TreeNode{}, mProbability{ prob } {}
+		TreeNode{}, probability_{ prob } {}
 
 
 	/**
 	 * @brief Returns the type of node stored in the current tree node.
 	 */
-	bool IsPlayerNode() { return mIsPlayerNode; }
-	bool IsChanceNode() { return mIsChanceNode; }
-	bool IsTerminalNode() { return mIsTerminalNode; }
+	bool IsPlayerNode() { return is_player_node_; }
+	bool IsChanceNode() { return is_chance_node_; }
+	bool IsTerminalNode() { return is_terminal_node_; }
 
 	/**
 	 * @brief Returns whether a tree node's child has updated the parent's child pointer.
 	 */
-	bool IsChildOffsetSet() { return mIsChildStartSet; }
+	bool IsChildOffsetSet() { return is_child_start_set_; }
 
 	/**
 	 * @brief Gettors for elements stored in a tree node.
 	 */
-	Action GetAction() { return mAction; }
-	PlayerNode GetPlayerNode() { return mPlayerNode; }
-	ChanceNode GetChanceNode() { return mChanceNode; }
-	float GetProbability() { return mProbability; }
-	byte* GetChildOffset() { return mpChildStartPos; }
+	Action GetAction() { return action_; }
+	PlayerNode GetPlayerNode() { return player_node_; }
+	ChanceNode GetChanceNode() { return chance_node_; }
+	float GetProbability() { return probability_; }
+	byte* GetChildOffset() { return child_start_pos_; }
 
 	/**
 	 * @return Gets string representation of the history for info set evaluation.
@@ -299,30 +298,30 @@ public:
 	 * @param childOffset Address of the current node in the search tree.
 	 */
 	void UpdateParentOffset(byte* childOffset) {
-		if (this->mpParent == nullptr) {
+		if (this->parent_ == nullptr) {
 			return;
 		}
-		if (this->mpParent->IsChildOffsetSet()) {
+		if (this->parent_->IsChildOffsetSet()) {
 			return;
 		}
-		this->mpParent->mpChildStartPos = childOffset;
-		this->mpParent->mIsChildStartSet = true;
+		this->parent_->child_start_pos_ = childOffset;
+		this->parent_->is_child_start_set_ = true;
 	}
 
 
 private:
 
 	std::string HistoryHashRecursive(bool isPlayerOne) {
-		if (mpParent == nullptr) {
+		if (parent_ == nullptr) {
 			return "";
 		} else if (this->IsChanceNode()) {
-			return this->GetChanceNode().ToHash() + mpParent->HistoryHash();
+			return this->GetChanceNode().ToHash() + parent_->HistoryHash();
 		} else if (this->GetPlayerNode().IsPlayerOne() == isPlayerOne) {
 			std::string currentHash = this->GetPlayerNode().ToInfoSetHash();
 			currentHash += this->GetAction().ToHash();
-			return currentHash + mpParent->HistoryHashRecursive(isPlayerOne);
+			return currentHash + parent_->HistoryHashRecursive(isPlayerOne);
 		} else {
-			return this->GetAction().ToHash() + mpParent->HistoryHashRecursive(isPlayerOne);
+			return this->GetAction().ToHash() + parent_->HistoryHashRecursive(isPlayerOne);
 		}	
 	}
 
@@ -330,17 +329,17 @@ private:
 		if (this == nullptr) {
 			return;
 		}
-		else if (this->mpParent == nullptr) {
+		else if (this->parent_ == nullptr) {
 			historyList.push_back(*this);
 		}
 		else {
-			this->mpParent->HistoryListRecursive(historyList, this);
+			this->parent_->HistoryListRecursive(historyList, this);
 			TreeNode toAdd(*this);
 			if (lastChild != nullptr) {
-				toAdd.mAction = lastChild->GetAction();
+				toAdd.action_ = lastChild->GetAction();
 			}
 			else {
-				toAdd.mAction = Action();
+				toAdd.action_ = Action();
 			}
 			historyList.push_back(toAdd);
 		}
@@ -369,28 +368,28 @@ namespace CfrConcepts {
 
 	/*Player Node must have function that returns child node of an action.*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
-	concept PlayerNodeChildFunc = requires( Action a, PlayerNode p, GameState g ) {
+	concept PlayerNodeChildFunc = requires( const Action a, const PlayerNode p, const GameState g ) {
 		{ p.Child(a, &g) } -> std::convertible_to<ClientNode<Action, PlayerNode, ChanceNode>>;
 
 	};
 
 	/*Player node must have function that returns a list of actions it can take*/
 	template<typename Action, typename PlayerNode, typename GameState>
-	concept PlayerNodeActionListFunc = requires ( PlayerNode p, GameState g ) {
+	concept PlayerNodeActionListFunc = requires ( const PlayerNode p, const GameState g ) {
 		{ p.ActionList(&g) } -> std::convertible_to<std::vector<Action>>;
 	};
 
 
 	/*Chance Node must have function that returns vector of child nodes*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameState>
-	concept ChanceNodeChildrenFunc = requires( Action a, PlayerNode p, ChanceNode c, GameState g ) {
+	concept ChanceNodeChildrenFunc = requires( const Action a, const PlayerNode p, const ChanceNode c, const GameState g ) {
 		{ c.Children(&g) } -> std::convertible_to<std::vector<ClientNode<Action, PlayerNode, ChanceNode>>>;
 
 	};
 
 	/*Client Game class must have a function that evaluates the utility at a terminal node.*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-	concept NeedsUtilityFunc = requires( Action a, PlayerNode p, ChanceNode c, GameClass g ) {
+	concept NeedsUtilityFunc = requires( const Action a, const PlayerNode p, const ChanceNode c, const GameClass g ) {
 		
 		{ g.UtilityFunc(std::vector<TreeNode<Action, PlayerNode, ChanceNode>>()) } ->
 			std::convertible_to<float>;
