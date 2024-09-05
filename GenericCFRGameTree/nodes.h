@@ -74,14 +74,15 @@ public:
 		is_player_node_{ false }, is_chance_node_{ false },
 		is_terminal_node_{ true } {}
 
+
 	ClientNode(PlayerNode p, float prob) :
 		ClientNode{ p } { probability_ = prob; }
 
 	ClientNode(ChanceNode c, float prob) :
-		ClientNode{ c } {probability_ = prob; }
+		ClientNode{ c } { probability_ = prob; }
 
 	ClientNode(float prob) :
-		ClientNode{} {probability_ = prob; } 
+		ClientNode{} { probability_ = prob; }
 
 	ClientNode(PlayerNode p, Action a) :
 		ClientNode{ p } { action_ = a; }
@@ -216,39 +217,34 @@ public:
 		* @param parent Pointer to parent Tree Node.
 		*/
 	TreeNode(PlayerNode p, TreeNode* parent) : 
-		TreeNode{ p }, parent_{ parent } {}
+		TreeNode{ p } { parent_ = parent; }
 
 	TreeNode(ChanceNode c, TreeNode* parent) :
-		TreeNode{ c }, parent_{ parent } {}
+		TreeNode{ c } { parent_ = parent; }
 
 	TreeNode(TreeNode* parent) :
-		TreeNode{}, parent_{ parent } {}
+		TreeNode{} { parent_ = parent; }
 
 
 	/**
 		* @brief Constructors that set action taken to get to the node.
 		* @param a Action taken by parent node.
 		*/
-	TreeNode(PlayerNode p, Action a) :
-		TreeNode{ p }, action_{ a } {}
+	TreeNode(PlayerNode p, Action a) : TreeNode{ p } { action_ = a; }
 
-	TreeNode(ChanceNode c, Action a) :
-		TreeNode{ c }, action_{ a } {}
+	TreeNode(ChanceNode c, Action a) : TreeNode{ c } { action_ = a; }
 
-	TreeNode(Action a) : TreeNode{}, action_{ a } {}
+	TreeNode(Action a) : TreeNode{} { action_ = a; }
 
 	/**
 		* @brief Constructors that set probability to get to the node.
 		* @param prob Probability of reach node.
 		*/
-	TreeNode(PlayerNode p, float prob) :
-		TreeNode{ p }, probability_{ prob } {}
+	TreeNode(PlayerNode p, float prob) : TreeNode{ p } {probability_ = prob; }
 
-	TreeNode(ChanceNode c, float prob) :
-		TreeNode{ c }, probability_{ prob } {}
+	TreeNode(ChanceNode c, float prob) : TreeNode{ c } {probability_ = prob; }
 
-	TreeNode(float prob) :
-		TreeNode{}, probability_{ prob } {}
+	TreeNode(float prob) : TreeNode{} {probability_ = prob; }
 
 
 	/**

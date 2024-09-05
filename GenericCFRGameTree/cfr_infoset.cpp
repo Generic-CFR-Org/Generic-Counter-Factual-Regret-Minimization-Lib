@@ -8,10 +8,10 @@ int TreeUtils::InfoSetSize(int num_actions) {
 	return sizeof(uint8_t) + ( 3 * num_actions * sizeof(float) );
 }
 
-TreeUtils::byte* TreeUtils::SetInfoSetNode(byte* pos, int num_actions)
+TreeUtils::Byte* TreeUtils::SetInfoSetNode(Byte* pos, int num_actions)
 {
 	*(pos++) = static_cast<uint8_t>(num_actions);
-	float uniform_prob = static_cast<float>(1.0) / static_cast<float>(num_actions);
+	const float uniform_prob = 1.0f / static_cast<float>(num_actions);
 	for (int i_uniform_strat = 0; i_uniform_strat < num_actions; i_uniform_strat++) {
 		TreeUtils::SetFloatAtBytePtr(pos, uniform_prob);
 		pos += sizeof(float);
@@ -28,13 +28,13 @@ using Byte = unsigned char;
 
 InfoSetData::InfoSetData(byte* pos)
 {
-	num_actions_ = ( uint8_t ) *(pos++);
-	int arr_size = num_actions_ * sizeof(float);
-	p_curr_strategy_ = pos;
+	this->num_actions_ = ( uint8_t ) *(pos++);
+	int arr_size = static_cast<int>(num_actions_) * sizeof(float);
+	this->p_curr_strategy_ = pos;
 	pos += arr_size;
-	p_cum_strategy_ = pos;
+	this->p_cum_strategy_ = pos;
 	pos += arr_size;
-	p_cum_regret_ = pos;
+	this->p_cum_regret_ = pos;
 	pos += arr_size;
 }
 
@@ -45,44 +45,44 @@ int InfoSetData::size()
 
 int InfoSetData::NumActions()
 {
-	return num_actions_;
+	return this->num_actions_;
 }
 
 float InfoSetData::GetCurrentStrategy(int index)
 {
-	byte* iFloat = p_curr_strategy_ + ( sizeof(float) * index );
+	byte* iFloat = this->p_curr_strategy_ + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 float InfoSetData::GetCumulativeStrategy(int index)
 {
-	byte* iFloat = p_cum_strategy_ + ( sizeof(float) * index );
+	byte* iFloat = this->p_cum_strategy_ + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 float InfoSetData::GetCumulativeRegret(int index)
 {
-	byte* iFloat = p_cum_regret_ + ( sizeof(float) * index );
+	byte* iFloat = this->p_cum_regret_ + ( sizeof(float) * index );
 	return TreeUtils::GetFloatFromBytePtr(iFloat);
 }
 
 void InfoSetData::SetCurrentStrategy(float prob, int index)
 {
-	byte* iFloat = p_curr_strategy_ + (sizeof(float) * index);
+	byte* iFloat = this->p_curr_strategy_ + (sizeof(float) * index);
 	TreeUtils::SetFloatAtBytePtr(iFloat, prob);
 }
 
 void InfoSetData::AddToCumulativeStrategy(float prob, int index)
 {
 	float newTotal = GetCumulativeStrategy(index) + prob;
-	byte* iFloat =  p_cum_strategy_ + ( sizeof(float) * index );
+	byte* iFloat =  this->p_cum_strategy_ + ( sizeof(float) * index );
 	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
 }
 
 void InfoSetData::AddToCumulativeRegret(float prob, int index)
 {
 	float newTotal = GetCumulativeRegret(index) + prob;
-	byte* iFloat = p_cum_regret_ + ( sizeof(float) * index );
+	byte* iFloat = this->p_cum_regret_ + ( sizeof(float) * index );
 	TreeUtils::SetFloatAtBytePtr(iFloat, newTotal);
 }
 

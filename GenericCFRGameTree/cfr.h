@@ -7,11 +7,12 @@
 #include <functional>
 #include <utility>
 #include <unordered_map>
+#include <map>
 #include <unordered_set>
 #include <string>
 #include <iostream>
 #include <random>
-#include <ranges>
+#include <ctime>
 #include "nodes.h"
 #include "cfr_tree_nodes.h"
 
@@ -22,14 +23,14 @@ using Byte = unsigned char;
  * @brief Requirements for client to use the generic cfr tree.
  */
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-concept GenericCfrRequirements = requires( Action a, PlayerNode p, ChanceNode c, GameClass g ) {
+concept GenericCfrRequirements = (
 	CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
 	CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
 	CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 	CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 	CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
-	CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>;
-};
+	CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
+);
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
@@ -228,7 +229,8 @@ ConstructTree() {
 
 	//Get info set size from the infoSetSizes map.
 	long long info_set_size = 0;
-	for (const auto& val : info_set_sizes | std::views::values) {
+
+	for (const auto& [key, val] : info_set_sizes ) {
 		info_set_size += TreeUtils::InfoSetSize(val);
 	}
 	/*
@@ -262,7 +264,7 @@ ConstructTree() {
 	std::unordered_map<int, long long> depth_offsets;
 	depth_offsets[0] = offset_at_depth;
 	int i_depth = 1;
-	for (const auto& val : depth_sizes | std::views::values) {
+	for (const auto& [key, val] : depth_sizes) {
 		offset_at_depth += val;
 		depth_offsets[i_depth] = offset_at_depth;
 		i_depth++;
@@ -426,7 +428,7 @@ ExploreNode(
 	}
 
 	long long old_depth_size = depth_map_size.at(curr_depth);
-	depth_map_size.insert_or_assign(curr_depth, old_depth_size + curr_node_size);
+	depth_map_size.insert({curr_depth, old_depth_size + curr_node_size});
 
 	return sub_tree_size + curr_node_size;
 }
@@ -524,7 +526,7 @@ SetInfoSets(
 	InfoSetPositions& info_set_pos_map
 ) const
 {
-	Byte* curr_offset = regret_table_;
+	Byte* curr_offset = this->regret_table_;
 	for (const auto& [key, val] : info_set_size_map) {
 		info_set_pos_map.insert({ key, curr_offset });
 		curr_offset = TreeUtils::SetInfoSetNode(curr_offset, val);
@@ -642,10 +644,6 @@ RegretMatching(InfoSetData& info_set) {
 		if (regret_sum > 0)
 		{
 			float curr_strat = info_set.GetCurrentStrategy(i_action);
-			if (curr_strat < 0)
-			{
-				throw std::exception("invalid probability");
-			}
 			info_set.SetCurrentStrategy(curr_strat / regret_sum, i_action);
 		}
 		else

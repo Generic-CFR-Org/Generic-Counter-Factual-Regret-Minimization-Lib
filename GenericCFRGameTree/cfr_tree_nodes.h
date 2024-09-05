@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "framework.h"
 #include <string>
+#include <cstdint>
 
 
 /*
@@ -15,10 +16,10 @@
  */
 class TreeUtils {
 public:
-	typedef unsigned char byte;
-	static const int kNonTerminalBaseSize = sizeof(char) + sizeof(uint8_t) + sizeof(byte*);
+	typedef unsigned char Byte;
+	static const int kNonTerminalBaseSize = sizeof(char) + sizeof(uint8_t) + sizeof(Byte*);
 	static const int kTerminalSize = sizeof(char) + sizeof(float);
-	static const int kPlayerNodeSize = kNonTerminalBaseSize + sizeof(byte*) + sizeof(char);
+	static const int kPlayerNodeSize = kNonTerminalBaseSize + sizeof(Byte*) + sizeof(char);
 	
 	/**
 	 * @brief General setters and getters for float and byte* types.
@@ -34,12 +35,12 @@ public:
 	}
 
 	static void SetBytePtrAtBytePtr(unsigned char* p_byte, unsigned char* ptr) {
-		byte** p_byte_ptr = reinterpret_cast<byte**>( p_byte );
+		Byte** p_byte_ptr = reinterpret_cast<Byte**>( p_byte );
 		*( p_byte_ptr ) = ptr;
 	}
 
-	static byte* GetBytePtrAtBytePtr(unsigned char* p_byte) {
-		byte** p_byte_ptr = reinterpret_cast<byte**>( p_byte );
+	static Byte* GetBytePtrAtBytePtr(unsigned char* p_byte) {
+		Byte** p_byte_ptr = reinterpret_cast<Byte**>( p_byte );
 		return *( p_byte_ptr );
 	}
 
@@ -47,7 +48,7 @@ public:
 	 * @return Number of bytes required to store a search tree node.
 	 */
 	static int PlayerNodeSizeInTree() { 
-		return kNonTerminalBaseSize + sizeof(byte*) + sizeof(bool); 
+		return kNonTerminalBaseSize + sizeof(Byte*) + sizeof(bool);
 	}
 
 	static int ChanceNodeSizeInTree(int numChildren) {
@@ -61,11 +62,11 @@ public:
 	 * @brief Sets each type of node in the search tree with relevant data required.
 	 * @return Address of the next node to be set.
 	 */
-	static byte* SetPlayerNode(byte* tree_pos, int num_children, byte* children_start, bool is_player_one, byte* info_set_pointer);
+	static Byte* SetPlayerNode(Byte* tree_pos, int num_children, Byte* children_start, bool is_player_one, Byte* info_set_pointer);
 
-	static byte* SetChanceNode(byte* tree_pos, byte* children_start, const std::vector<float>& child_probs);
+	static Byte* SetChanceNode(Byte* tree_pos, Byte* children_start, const std::vector<float>& child_probs);
 
-	static byte* SetTerminalNode(byte* tree_pos, float utility);
+	static Byte* SetTerminalNode(Byte* tree_pos, float utility);
 
 	/**
 	 * @return Number of bytes required to store an info set with N actions.
@@ -76,7 +77,7 @@ public:
 	 * @brief Sets an Information Set in the regret table.
 	 * @return Address of the next Information Set to be set.
 	 */
-	static byte* SetInfoSetNode(byte* pos, int num_actions);
+	static Byte* SetInfoSetNode(Byte* pos, int num_actions);
 
 };
 
@@ -188,7 +189,7 @@ class InfoSetData {
 	byte* p_cum_regret_;
 
 public:
-	InfoSetData(TreeUtils::byte* pos);
+	InfoSetData(TreeUtils::Byte* pos);
 
 	int size();
 
