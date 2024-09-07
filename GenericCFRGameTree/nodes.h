@@ -37,7 +37,9 @@ namespace CfrConcepts {
 		{ p.IsPlayerOne() } -> std::convertible_to<bool>;
 
 	};
+
 }
+
 
 /**
  * @brief Node used by the client to store the child of a player node or chance node.
@@ -111,7 +113,7 @@ requires CfrConcepts::Hashable<Action, PlayerNode, ChanceNode>&&
 		 CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>
 class TreeNode {
 
-	using byte = unsigned char;
+	using Byte = unsigned char;
 	using TreeNodeList = std::vector<TreeNode>;
 protected:
 	Action action_;
@@ -124,7 +126,7 @@ protected:
 	bool is_chance_node_;
 	bool is_terminal_node_;
 	TreeNode* parent_;
-	byte* child_start_pos_;
+	Byte* child_start_pos_;
 	bool is_child_start_set_;
 
 public:
@@ -185,8 +187,6 @@ public:
 		is_chance_node_ = other.is_chance_node_;
 		is_terminal_node_ = other.is_terminal_node_;
 		parent_ = parent;
-		child_start_pos_ = nullptr;
-		is_child_start_set_ = false;
 	}
 
 
@@ -197,20 +197,17 @@ public:
 	TreeNode(PlayerNode p) :
 		action_{}, player_node_{ p }, chance_node_{}, probability_{ 1.0 },
 		is_player_node_{ true }, is_chance_node_{ false },
-		is_terminal_node_{ false }, parent_{ nullptr },
-		child_start_pos_{ nullptr }, is_child_start_set_{ false } {}
+		is_terminal_node_{ false }, parent_{ nullptr } {}
 
 	TreeNode(ChanceNode c) :
 		action_{}, player_node_{}, chance_node_{ c }, probability_{ 1.0 },
 		is_player_node_{ false }, is_chance_node_{ true },
-		is_terminal_node_{ false }, parent_{ nullptr },
-		child_start_pos_{nullptr}, is_child_start_set_{ false } {}
+		is_terminal_node_{ false }, parent_{ nullptr } {}
 
 	TreeNode() :
 		action_{}, player_node_{}, chance_node_{}, probability_{ 1.0 },
 		is_player_node_{ false }, is_chance_node_{ false },
-		is_terminal_node_{ true }, parent_{ nullptr },
-		child_start_pos_{nullptr}, is_child_start_set_{ false } {}
+		is_terminal_node_{ true }, parent_{ nullptr } {}
 
 	/**
 		* @brief Constructors that give node a parent tree node.
@@ -255,18 +252,12 @@ public:
 	bool IsTerminalNode() { return is_terminal_node_; }
 
 	/**
-	 * @brief Returns whether a tree node's child has updated the parent's child pointer.
-	 */
-	bool IsChildOffsetSet() { return is_child_start_set_; }
-
-	/**
 	 * @brief Gettors for elements stored in a tree node.
 	 */
 	Action GetAction() { return action_; }
 	PlayerNode GetPlayerNode() { return player_node_; }
 	ChanceNode GetChanceNode() { return chance_node_; }
 	float GetProbability() { return probability_; }
-	byte* GetChildOffset() { return child_start_pos_; }
 
 	/**
 	 * @return Gets string representation of the history for info set evaluation.
@@ -288,22 +279,6 @@ public:
 		HistoryListRecursive(historyList, nullptr);
 		return historyList;
 	}
-
-	/**
-	 * @brief Updates a node's parent's child start offset for search tree navigation.
-	 * @param childOffset Address of the current node in the search tree.
-	 */
-	void UpdateParentOffset(byte* childOffset) {
-		if (this->parent_ == nullptr) {
-			return;
-		}
-		if (this->parent_->IsChildOffsetSet()) {
-			return;
-		}
-		this->parent_->child_start_pos_ = childOffset;
-		this->parent_->is_child_start_set_ = true;
-	}
-
 
 private:
 
@@ -386,7 +361,7 @@ namespace CfrConcepts {
 	/*Client Game class must have a function that evaluates the utility at a terminal node.*/
 	template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 	concept NeedsUtilityFunc = requires( const Action a, const PlayerNode p, const ChanceNode c, const GameClass g ) {
-		
+
 		{ g.UtilityFunc(std::vector<TreeNode<Action, PlayerNode, ChanceNode>>()) } ->
 			std::convertible_to<float>;
 	};

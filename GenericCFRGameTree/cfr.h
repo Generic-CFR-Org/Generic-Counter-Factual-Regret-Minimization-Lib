@@ -23,14 +23,21 @@ using Byte = unsigned char;
  * @brief Requirements for client to use the generic cfr tree.
  */
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-concept GenericCfrRequirements = (
+concept GenericCfrRequirements =
 	CfrConcepts::PlayerNodePlayerOneFunc<PlayerNode>&&
 	CfrConcepts::PlayerNodeActionListFunc<Action, PlayerNode, GameClass>&&
 	CfrConcepts::PlayerNodeChildFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 	CfrConcepts::ChanceNodeChildrenFunc<Action, PlayerNode, ChanceNode, GameClass>&&
 	CfrConcepts::NeedsUtilityFunc< Action, PlayerNode, ChanceNode, GameClass>&&
-	CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>
-);
+	CfrConcepts::Hashable< Action, PlayerNode, ChanceNode>;
+
+
+
+
+
+
+
+
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
 requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
@@ -144,8 +151,8 @@ private:
 		* @return Size of the search node in the search tree.
 		*/
 	long long ExploreNode(
-		CfrTreeNode* search_node, InfoSetSizes& info_set_map,
-		std::unordered_map<int, long long>& depth_map_size,
+		CfrTreeNode *search_node, InfoSetSizes &info_set_map,
+		std::vector<long long> &depth_map_size,
 		int curr_depth
 	);
 
@@ -154,9 +161,9 @@ private:
 		* @return Returns pointer to position to set next node.
 		*/
 	void SetNode(
-		CfrTreeNode* search_node, int depth,
-		std::unordered_map<int, long long>& cumulative_offsets,
-		InfoSetPositions& info_set_pos_map
+		CfrTreeNode *search_node, int depth,
+		std::vector<long long> &cumulative_offsets,
+		InfoSetPositions &info_set_pos_map
 	);
 
 	/**
@@ -222,7 +229,7 @@ ConstructTree() {
 	InfoSetSizes info_set_sizes;
 
 	//Initialize unordered map to track size at each depth of the tree.
-	std::unordered_map<int, long long> depth_sizes;
+	std::vector<long long> depth_sizes;
 
 	//Explore all children and update info set and depth size maps.
 	long long search_tree_size = ExploreNode(root, info_set_sizes, depth_sizes, 0);
@@ -261,13 +268,11 @@ ConstructTree() {
 
 	//Generate cumulative offset map to find a node's appropriate position in the search tree.
 	long long offset_at_depth = 0;
-	std::unordered_map<int, long long> depth_offsets;
-	depth_offsets[0] = offset_at_depth;
-	int i_depth = 1;
-	for (const auto& [key, val] : depth_sizes) {
-		offset_at_depth += val;
-		depth_offsets[i_depth] = offset_at_depth;
-		i_depth++;
+	std::vector<long long> depth_offsets;
+	depth_offsets.push_back(offset_at_depth);
+	for (const long long depth_size : depth_sizes) {
+		offset_at_depth += depth_size;
+		depth_offsets.push_back(offset_at_depth);
 	}
 	//Set nodes 
 	SetNode(root, 0, depth_offsets, info_set_positions);
@@ -380,12 +385,12 @@ template<typename Action, typename PlayerNode, typename ChanceNode, typename Gam
 inline long long CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 ExploreNode(
 	CfrTreeNode* search_node, InfoSetSizes& info_set_map,
-	std::unordered_map<int, long long>& depth_map_size, int curr_depth
+	std::vector<long long>& depth_map_size, int curr_depth
 ) {
 
 	if (static_cast<int>( depth_map_size.size()) <= curr_depth)
 	{
-		depth_map_size.insert({ curr_depth, 0 });
+		depth_map_size.push_back(0);
 	}
 	long curr_node_size;
 	long sub_tree_size = 0;
@@ -427,18 +432,18 @@ ExploreNode(
 		curr_node_size = TreeUtils::kTerminalSize;
 	}
 
-	long long old_depth_size = depth_map_size.at(curr_depth);
-	depth_map_size.insert({curr_depth, old_depth_size + curr_node_size});
+	const long long old_depth_size = depth_map_size.at(curr_depth);
+	depth_map_size[curr_depth] = old_depth_size + curr_node_size;
 
 	return sub_tree_size + curr_node_size;
 }
 
 template<typename Action, typename PlayerNode, typename ChanceNode, typename GameClass>
-	requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
+requires GenericCfrRequirements<Action, PlayerNode, ChanceNode, GameClass>
 inline void CfrTree<Action, PlayerNode, ChanceNode, GameClass>::
 SetNode(
 	CfrTreeNode* search_node, int depth,
-	std::unordered_map<int, long long>& cumulative_offsets,
+	std::vector<long long>& cumulative_offsets,
 	InfoSetPositions& info_set_pos_map
 ) {
 
@@ -458,15 +463,12 @@ SetNode(
 			SetNode(nextChild, depth + 1, cumulative_offsets, info_set_pos_map);
 		}
 
-		Byte* child_start_offset = search_node->GetChildOffset();
+		Byte* child_start_offset = cumulative_offsets[depth	+ 1] + game_tree_;
 		bool is_player_one = currNode.IsPlayerOne();
 
 		//Use history hash to find info set position.
 		std::string history_hash = search_node->HistoryHash();
 		Byte* info_set_pos = info_set_pos_map.at(history_hash);
-
-		//Update parent child start offset.
-		search_node->UpdateParentOffset(curr_offset);
 
 		//Once node is set, it can be safely deleted.
 		delete search_node;
@@ -487,10 +489,7 @@ SetNode(
 			SetNode(next_child, depth + 1, cumulative_offsets, info_set_pos_map);
 		}
 
-		Byte* child_start_offset = search_node->GetChildOffset();
-
-		//Update parent child start offset.
-		search_node->UpdateParentOffset(curr_offset);
+		Byte* child_start_offset = cumulative_offsets[depth	+ 1] + game_tree_;
 
 		//Set chance node in the game tree.
 		TreeUtils::SetChanceNode(curr_offset, child_start_offset, probList);
@@ -504,9 +503,6 @@ SetNode(
 		//Else set terminal node.
 		HistoryList history_list = search_node->HistoryList();
 		float utility = static_game_info_->UtilityFunc(history_list);
-
-		//Update parent child start offset.
-		search_node->UpdateParentOffset(curr_offset);
 
 		TreeUtils::SetTerminalNode(curr_offset, utility);
 

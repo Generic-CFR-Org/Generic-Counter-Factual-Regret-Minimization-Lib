@@ -29,8 +29,11 @@ public:
 		explicit Player(bool p) { player_with_action_ = p; }
 		Player(const Player& other) {player_with_action_ = other.player_with_action_; }
 		bool IsPlayerOne() const { return player_with_action_; }
-		std::string ToHash() const { return std::string(1, player_with_action_); }
-		std::string ToInfoSetHash() const { return std::string(1, player_with_action_); }
+		std::string ToHash() const { return "PNode"; }
+		std::string ToInfoSetHash() const
+		{
+			return player_with_action_ ? "One" : "Two";
+		}
 		Node Child(const Action a, const RockPaperScissors* game_info) const
 		{
 			if (player_with_action_) {

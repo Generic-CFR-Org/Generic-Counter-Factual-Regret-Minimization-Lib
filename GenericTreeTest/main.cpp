@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 	std::cout << tree->TreeSize() << "\n";
 	std::cout << tree->SearchTreeSize() << "\n";
 	std::cout << tree->InfoSetTableSize() << "\n";
-	tree->MCCFR_ToAccuracy(0.5);
+	tree->MCCFR_ToAccuracy(0.1);
 	std::cout << "After CFR: \n\n";
 	tree->PrintTree();
 	
