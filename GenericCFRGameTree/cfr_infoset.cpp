@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "cfr_tree_nodes.h"
+std::cout << "hello world!";
 
 
 int TreeUtils::InfoSetSize(int num_actions) {
