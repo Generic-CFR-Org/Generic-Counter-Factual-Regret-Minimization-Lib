@@ -1,0 +1,22 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "MSVC",
+	"compiler-id" : "MSVC",
+	"compiler-simulate-id" : "",
+	"config" : "Debug",
+	"cxx-modules" : {},
+	"dir-cur-bld" : "C:/Users/Amir/CLionProjects/Generic-Counter-Factual-Regret-Minimzation-Lib/cmake-build-debug-visual-studio",
+	"dir-cur-src" : "C:/Users/Amir/CLionProjects/Generic-Counter-Factual-Regret-Minimzation-Lib",
+	"dir-top-bld" : "C:/Users/Amir/CLionProjects/Generic-Counter-Factual-Regret-Minimzation-Lib/cmake-build-debug-visual-studio",
+	"dir-top-src" : "C:/Users/Amir/CLionProjects/Generic-Counter-Factual-Regret-Minimzation-Lib",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : 
+	[
+		"C:\\Users\\Amir\\CLionProjects\\Generic-Counter-Factual-Regret-Minimzation-Lib\\GenericCFRGameTree",
+		"C:\\Users\\Amir\\CLionProjects\\Generic-Counter-Factual-Regret-Minimzation-Lib\\GenericTreeTest"
+	],
+	"language" : "CXX",
+	"linked-target-dirs" : [],
+	"module-dir" : "C:/Users/Amir/CLionProjects/Generic-Counter-Factual-Regret-Minimzation-Lib/cmake-build-debug-visual-studio/CMakeFiles/Generic_Counter_Factual_Regret_Minimzation_Lib.dir"
+}

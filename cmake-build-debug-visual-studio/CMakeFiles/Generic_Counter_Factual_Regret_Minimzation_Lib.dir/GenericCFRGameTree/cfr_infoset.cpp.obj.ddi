@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "CMakeFiles\\Generic_Counter_Factual_Regret_Minimzation_Lib.dir\\GenericCFRGameTree\\cfr_infoset.cpp.obj",
+            "outputs": [
+                "C:\\Users\\Amir\\CLionProjects\\Generic-Counter-Factual-Regret-Minimzation-Lib\\cmake-build-debug-visual-studio\\vc140.pdb",
+                "CMakeFiles\\Generic_Counter_Factual_Regret_Minimzation_Lib.dir\\GenericCFRGameTree\\cfr_infoset.cpp.obj.ddi"
+            ],
+            "requires": []
+        }
+    ]
+}
