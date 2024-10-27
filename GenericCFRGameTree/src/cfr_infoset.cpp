@@ -2,7 +2,8 @@
 #include "pch.h"
 #include "framework.h"
 #include "cfr_tree_nodes.h"
-
+std::cout << "hello world!";
+std::cout << "8=======>!";
 
 int TreeUtils::InfoSetSize(int num_actions) {
 	return sizeof(uint8_t) + ( 3 * num_actions * sizeof(float) );
